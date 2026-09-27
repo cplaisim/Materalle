@@ -1547,6 +1547,91 @@ def _menu_page_context(user):
     }
 
 
+COMPONENT_TO_CATEGORY = {
+    'Vegetable': 'VEGETABLE',
+    'Fruit': 'FRUIT',
+    'Grain': 'GRAIN',
+    'Protein': 'PROTEIN',
+    'Drink': 'DRINK',
+}
+_MENU_WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+
+
+def _edit_pending_week_items(request, current_menu, stored_menu, accepted_keys, data):
+    """Reroll only the specific meal/day/component cells the caller picked out,
+    leaving the rest of the already-generated pending week untouched."""
+    if not current_menu or '_pending_week' not in stored_menu:
+        return JsonResponse({
+            'error': "Generate this week's menu first, then you can change individual items."
+        }, status=400)
+
+    targets = data.get('targets', [])
+    if not targets:
+        return JsonResponse({'error': 'No items selected to change.'}, status=400)
+
+    selected_item_ids = data.get('grocery_item_ids', [])
+    if selected_item_ids:
+        items = GroceryItem.objects.filter(added_by=request.user, id__in=selected_item_ids)
+    else:
+        items = GroceryItem.objects.filter(added_by=request.user)
+    items_by_cat = {
+        cat_code: list(items.filter(category=cat_code).values_list('name', flat=True))
+        for cat_code, _ in GroceryItem.CATEGORIES
+    }
+
+    def reroll(category, current_value):
+        pool = items_by_cat.get(category, [])
+        if not pool:
+            return ""
+        choices = [v for v in pool if v != current_value] or pool
+        return random.choice(choices)
+
+    pending = stored_menu['_pending_week']
+    week_menu = pending['menu']
+    changed = []
+
+    for target in targets:
+        meal_type = target.get('meal_type')
+        day = target.get('day')
+        component_name = target.get('component')
+        category = COMPONENT_TO_CATEGORY.get(component_name)
+        meal_data = week_menu.get(meal_type)
+        if not meal_data or not category or day not in _MENU_WEEKDAYS:
+            continue
+        component = next((c for c in meal_data['components'] if c['name'] == component_name), None)
+        if component is None:
+            continue
+
+        new_value = reroll(category, component['items'].get(day, ''))
+        component['items'][day] = new_value
+        changed.append({'meal_type': meal_type, 'day': day, 'component': component_name, 'value': new_value})
+
+        if component_name in ('Protein', 'Grain'):
+            protein_comp = next((c for c in meal_data['components'] if c['name'] == 'Protein'), None)
+            grain_comp = next((c for c in meal_data['components'] if c['name'] == 'Grain'), None)
+            protein_val = protein_comp['items'].get(day, '') if protein_comp else ''
+            grain_val = grain_comp['items'].get(day, '') if grain_comp else ''
+            parts = [p for p in [protein_val, grain_val] if p]
+            meal_data['titles'][day] = " and ".join(parts) if parts else "Untitled"
+
+    if not changed:
+        return JsonResponse({'error': 'None of the selected items could be changed.'}, status=400)
+
+    stored_menu['_pending_week']['menu'] = week_menu
+    current_menu.menu_data = stored_menu
+    current_menu.save(update_fields=['menu_data_json', 'updated_at'])
+
+    week_key = f"Week {pending['week_number']}"
+    return JsonResponse({
+        'menu': {week_key: week_menu},
+        'menu_id': current_menu.pk,
+        'week_number': pending['week_number'],
+        'accepted_week_count': len(accepted_keys),
+        'date_range': pending['date_range'],
+        'changed': changed,
+    })
+
+
 @login_required
 def generate_menu(request):
     if request.method == 'GET':
@@ -1557,7 +1642,7 @@ def generate_menu(request):
             data = json.loads(request.body.decode('utf-8'))
             selected_item_ids = data.get('grocery_item_ids', [])
             action = data.get('action', 'generate')
-            if action not in ('generate', 'regenerate'):
+            if action not in ('generate', 'regenerate', 'edit_items'):
                 return JsonResponse({'error': 'Invalid menu action.'}, status=400)
 
             today = timezone.now().date()
@@ -1569,6 +1654,9 @@ def generate_menu(request):
             else:
                 stored_menu = {}
                 accepted_keys = []
+
+            if action == 'edit_items':
+                return _edit_pending_week_items(request, current_menu, stored_menu, accepted_keys, data)
 
             if len(accepted_keys) >= 4:
                 if current_menu and current_menu.month_year == default_start_date.strftime('%b-%y'):

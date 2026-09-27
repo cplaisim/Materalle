@@ -3,7 +3,7 @@
     <div class="chat-header p-3 rounded-top">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
             <span class="fw-bold">Patience</span>
-            <div class="d-flex flex-wrap gap-2">
+            <div class="d-flex flex-wrap gap-2" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
                 <button type="button" class="btn btn-light btn-sm quick-action-btn" id="btn-fine"><i class="fas fa-hand-paper me-1"></i>Fine Motor</button>
                 <button type="button" class="btn btn-light btn-sm quick-action-btn" id="btn-gross"><i class="fas fa-running me-1"></i>Gross Motor</button>
                 <button type="button" class="btn btn-light btn-sm quick-action-btn" id="btn-hand-eye"><i class="fas fa-hands me-1"></i>Hand-Eye</button>
@@ -11,6 +11,14 @@
                 <button type="button" class="btn btn-light btn-sm quick-action-btn" id="btn-sensory"><i class="fas fa-hand-sparkles me-1"></i>Sensory Motor</button>
             </div>
         </div>
+    </div>
+    <div class="p-3 border-bottom bg-light">
+        <form id="patienceChatForm" class="d-flex gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="conversation_id" id="conversationId" value="">
+            <input type="text" name="message" class="form-control form-control-sm" placeholder="Type your message..." required>
+            <button type="submit" class="btn btn-primary btn-sm px-3"><i class="fas fa-paper-plane"></i></button>
+        </form>
     </div>
     <div id="llmProgressBar" class="d-none px-3 pt-2">
         <div class="d-flex align-items-center gap-2 mb-1">
@@ -24,18 +32,10 @@
     <div class="chat-messages flex-grow-1 overflow-auto p-3" id="messageContainer">
         <div class="message assistant-message mb-2">
             <div class="d-flex align-items-start">
-                <img src="{% static 'images/patience.jpg' %}" alt="Patience" class="rounded-circle me-2" style="width: 28px; height: 28px; object-fit: cover;">
+                <img src="{% static 'images/patience.jpg' %}" alt="Patience" class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover; flex-shrink: 0;">
                 <div class="message-content p-2 rounded">Hello! I'm Patience, your motor skills and physical development guide. How can I help with fine motor, gross motor, coordination, or balance activities today?</div>
             </div>
         </div>
-    </div>
-    <div class="p-3 border-top bg-white">
-        <form id="patienceChatForm" class="d-flex gap-2">
-            {% csrf_token %}
-            <input type="hidden" name="conversation_id" id="conversationId" value="">
-            <input type="text" name="message" class="form-control form-control-sm" placeholder="Type your message..." required>
-            <button type="submit" class="btn btn-primary btn-sm px-3"><i class="fas fa-paper-plane"></i></button>
-        </form>
     </div>
 </div>
 {% include 'enroll/schedule_activity_dialog.html' %}

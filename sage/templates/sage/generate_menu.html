@@ -153,12 +153,15 @@
                             <h5 class="mb-1" id="weekReviewTitle">Review this week's menu</h5>
                             <div class="small" id="menuProgressText">{{ accepted_week_count }} of 4 weeks accepted. Regenerating replaces only this week's draft.</div>
                         </div>
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 flex-wrap">
                             <button type="button" class="btn btn-success" id="acceptWeekButton">Accept Week</button>
                             <button type="button" class="btn btn-outline-primary" id="regenerateWeekButton">Generate Another Menu</button>
+                            <button type="button" class="btn btn-outline-secondary" id="editItemsButton">Change Specific Items</button>
+                            <button type="button" class="btn btn-warning d-none" id="rerollSelectedButton">Reroll Selected (<span id="selectedCount">0</span>)</button>
                         </div>
                     </div>
                     <div class="small mt-2" id="weekDecisionStatus" aria-live="polite"></div>
+                    <div class="small mt-1 text-muted d-none" id="editModeHint">Click any item below to mark it for a fresh pick, then hit "Reroll Selected". Click again to unmark.</div>
                 </div>
                 <div class="d-flex justify-content-end mb-2 no-print">
                     <button class="btn btn-outline-primary btn-sm" id="downloadMenu">
@@ -462,7 +465,123 @@
     });
 
     if (initialPending) showPendingWeek(initialPending);
-    
+
+    // ── Change specific items within the pending week, without a full reroll ──
+    const editItemsButton = document.getElementById('editItemsButton');
+    const rerollSelectedButton = document.getElementById('rerollSelectedButton');
+    const selectedCountEl = document.getElementById('selectedCount');
+    const editModeHint = document.getElementById('editModeHint');
+    let editMode = false;
+    let selectedCells = new Map(); // "mealType|day|component" -> {meal_type, day, component}
+
+    function cellKey(mealType, day, component) {
+        return `${mealType}|${day}|${component}`;
+    }
+
+    function exitEditMode() {
+        editMode = false;
+        selectedCells.clear();
+        menuContent.classList.remove('edit-mode');
+        menuContent.querySelectorAll('.menu-cell.cell-selected').forEach(td => td.classList.remove('cell-selected'));
+        editItemsButton.textContent = 'Change Specific Items';
+        editItemsButton.classList.remove('btn-secondary');
+        editItemsButton.classList.add('btn-outline-secondary');
+        rerollSelectedButton.classList.add('d-none');
+        editModeHint.classList.add('d-none');
+        selectedCountEl.textContent = '0';
+        acceptWeekButton.disabled = false;
+        regenerateWeekButton.disabled = false;
+        generateBtn.disabled = false;
+    }
+
+    editItemsButton.addEventListener('click', function() {
+        if (editMode) {
+            exitEditMode();
+            return;
+        }
+        editMode = true;
+        menuContent.classList.add('edit-mode');
+        editItemsButton.textContent = 'Cancel Selecting';
+        editItemsButton.classList.remove('btn-outline-secondary');
+        editItemsButton.classList.add('btn-secondary');
+        editModeHint.classList.remove('d-none');
+        acceptWeekButton.disabled = true;
+        regenerateWeekButton.disabled = true;
+        generateBtn.disabled = true;
+    });
+
+    menuContent.addEventListener('click', function(e) {
+        if (!editMode) return;
+        const cell = e.target.closest('.menu-cell');
+        if (!cell) return;
+        const key = cellKey(cell.dataset.mealType, cell.dataset.day, cell.dataset.component);
+        if (selectedCells.has(key)) {
+            selectedCells.delete(key);
+            cell.classList.remove('cell-selected');
+        } else {
+            selectedCells.set(key, {
+                meal_type: cell.dataset.mealType,
+                day: cell.dataset.day,
+                component: cell.dataset.component,
+            });
+            cell.classList.add('cell-selected');
+        }
+        selectedCountEl.textContent = String(selectedCells.size);
+        rerollSelectedButton.classList.toggle('d-none', selectedCells.size === 0);
+    });
+
+    rerollSelectedButton.addEventListener('click', async function() {
+        if (selectedCells.size === 0) return;
+        const csrftoken = getCookie('csrftoken');
+        const groceryItemIds = Array.from(document.querySelectorAll('.grocery-checkbox:checked'))
+            .map(checkbox => parseInt(checkbox.value, 10));
+        const targets = Array.from(selectedCells.values());
+
+        rerollSelectedButton.disabled = true;
+        weekDecisionStatus.textContent = 'Rerolling selected items...';
+        try {
+            const response = await fetch('{% url "sage:generate_menu" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken,
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    action: 'edit_items',
+                    grocery_item_ids: groceryItemIds,
+                    targets: targets,
+                })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || `Server error: ${response.status}`);
+
+            const changedKeys = new Set(
+                (result.changed || []).map(c => cellKey(c.meal_type, c.day, c.component))
+            );
+            showPendingWeek({
+                week_number: result.week_number,
+                menu: result.menu[`Week ${result.week_number}`],
+                date_range: result.date_range
+            });
+            exitEditMode();
+            changedKeys.forEach(key => {
+                const [mealType, day, component] = key.split('|');
+                const td = menuContent.querySelector(
+                    `.menu-cell[data-meal-type="${CSS.escape(mealType)}"][data-day="${CSS.escape(day)}"][data-component="${CSS.escape(component)}"]`
+                );
+                if (td) td.classList.add('cell-changed');
+            });
+            weekDecisionStatus.textContent = `${changedKeys.size} item(s) rerolled. Accept this week, or change more items.`;
+        } catch (error) {
+            console.error('Reroll error:', error);
+            weekDecisionStatus.textContent = error.message || 'Failed to reroll selected items.';
+        } finally {
+            rerollSelectedButton.disabled = false;
+        }
+    });
+
     downloadBtn.addEventListener('click', async function() {
         const menuId = this.dataset.menuId;
         if (!menuId) return;
@@ -526,7 +645,7 @@ function displayMenu(menuData, dateRange) {
             (mealData.components || []).forEach(comp => {
                 html += `<tr><td style="border:1px solid #999; padding:5px 8px; font-weight:600; width:130px;">${comp.name}</td>`;
                 days.forEach(day => {
-                    html += `<td style="border:1px solid #999; padding:5px 8px;">${comp.items[day] || ''}</td>`;
+                    html += `<td class="menu-cell" data-meal-type="${mealType}" data-day="${day}" data-component="${comp.name}" style="border:1px solid #999; padding:5px 8px;">${comp.items[day] || ''}</td>`;
                 });
                 html += `</tr>`;
             });
@@ -602,6 +721,26 @@ function getCookie(name) {
 }
 .dish-item .form-check-input:checked ~ .form-check-label {
     font-weight: 500;
+}
+
+#menuContent.edit-mode .menu-cell {
+    cursor: pointer;
+    transition: background-color 0.15s, outline-color 0.15s;
+}
+#menuContent.edit-mode .menu-cell:hover {
+    background-color: #fff3cd;
+}
+#menuContent.edit-mode .menu-cell.cell-selected {
+    background-color: #ffe69c;
+    outline: 2px solid #d39e00;
+    outline-offset: -2px;
+}
+.menu-cell.cell-changed {
+    animation: cellChangedFlash 1.6s ease-out;
+}
+@keyframes cellChangedFlash {
+    0% { background-color: #c3e6cb; }
+    100% { background-color: transparent; }
 }
 </style>
 {% endblock %}
