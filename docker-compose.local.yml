@@ -1,0 +1,15 @@
+services:
+  db:
+    container_name: materalle_local_db
+  redis:
+    container_name: materalle_local_redis
+    ports: !override
+      - "6380:6379"
+  ollama:
+    container_name: materalle_local_ollama
+    ports: !override
+      - "12435:12434"
+  backend:
+    container_name: materalle_local_backend
+  worker:
+    container_name: materalle_local_worker

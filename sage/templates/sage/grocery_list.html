@@ -71,7 +71,7 @@
     <!-- Lower Section - Grocery List Table -->
     <div class="h-1/2 p-4 overflow-auto">
         <h2 class="text-xl font-bold mb-4">Current Grocery List</h2>
-        <div id="grocery-columns" class="grid grid-cols-5 gap-4">
+        <div id="grocery-columns" class="grid grid-cols-6 gap-4">
             <!-- Vegetables Column -->
             <div class="bg-white p-4 rounded-lg shadow">
                 <h3 class="font-bold text-lg mb-2">Vegetables</h3>
@@ -146,6 +146,7 @@
                     {% endfor %}
                 </ul>
             </div>
+
         </div>
 
         <!-- Conflict Resolution Modal -->
@@ -346,11 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const data = await response.json();
             if (data.menu) {
-                const menuUrl = '{% url "sage:generate_menu" %}?' + new URLSearchParams({
-                    menu: JSON.stringify(data.menu),
-                    period: activePeriod
-                }).toString();
-                window.location.href = menuUrl;
+                window.location.href = '{% url "sage:current_menu" %}';
             } else {
                 throw new Error(data.error || 'Failed to generate menu');
             }
@@ -407,9 +404,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const categoryLabels = {
             'VEGETABLE': 'Vegetable', 'FRUIT': 'Fruit', 'GRAIN': 'Grain',
-            'PROTEIN': 'Protein', 'DRINK': 'Drink', 'OTHER': 'Other'
+            'PROTEIN': 'Protein'
         };
-        const allCategories = ['VEGETABLE', 'FRUIT', 'GRAIN', 'PROTEIN', 'DRINK', 'OTHER'];
+        const allCategories = ['VEGETABLE', 'FRUIT', 'GRAIN', 'PROTEIN'];
 
         conflicts.forEach((conflict, idx) => {
             const options = (conflict.alternatives && conflict.alternatives.length)

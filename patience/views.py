@@ -10,7 +10,7 @@ from enroll.models import Student, Child, StudentRating
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 from agent.models import Conversation, Message
-from materalleapp.agent_base import get_anthropic_response
+from materalleapp.agent_base import get_agent_response
 
 PATIENCE_SYSTEM_PROMPT = PatienceAgent().get_system_prompt()
 
@@ -44,6 +44,7 @@ def _build_patience_messages(conversation, user_message):
 def index(request):
     conversations = Conversation.objects.filter(user=request.user).order_by('-created_at')
     students = Child.objects.all()
+    latest_activity = MotorCurriculum.objects.order_by('-created_at').first()
 
     # Build per-child rating summaries for Patience activities
     patience_ct = ContentType.objects.get_for_model(MotorCurriculum)
@@ -65,6 +66,7 @@ def index(request):
         'conversations': conversations,
         'students': students,
         'children_data': children_data,
+        'current_activity_id': latest_activity.pk if latest_activity else '',
         'page': 'patience',
     })
 
@@ -95,7 +97,7 @@ def chat_view(request, conversation_id=None):
             from sage.views import get_rag_context
             rag = get_rag_context(request.user)
             system = PATIENCE_SYSTEM_PROMPT + rag
-            response_text = get_anthropic_response(messages=messages_for_claude, system_prompt=system)
+            response_text, fallback_used = get_agent_response('patience', messages_for_claude, system)
 
             Message.objects.create(
                 conversation=conversation,
@@ -105,7 +107,8 @@ def chat_view(request, conversation_id=None):
 
             return JsonResponse({
                 'message': response_text,
-                'conversation_id': conversation.id
+                'conversation_id': conversation.id,
+                'fallback': fallback_used,
             })
 
         except Exception as e:
@@ -180,7 +183,7 @@ def send_message(request):
             from sage.views import get_rag_context
             rag = get_rag_context(request.user)
             system = PATIENCE_SYSTEM_PROMPT + rag
-            response_text = get_anthropic_response(messages=messages_for_claude, system_prompt=system)
+            response_text, fallback_used = get_agent_response('patience', messages_for_claude, system)
 
             Message.objects.create(
                 conversation=conversation,
@@ -220,6 +223,7 @@ def send_message(request):
             return JsonResponse({
                 'message': response_text,
                 'conversation_id': conversation.id,
+                'fallback': fallback_used,
                 'entry_id': entry.pk if entry else None,
             })
         except Exception as e:

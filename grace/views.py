@@ -7,7 +7,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.contenttypes.models import ContentType
 from .models import Conversation, Message
 from enroll.models import Child, StudentRating
-from materalleapp.agent_base import get_anthropic_response
+from materalleapp.agent_base import get_agent_response
 from .models import SocialCurriculum
 from .agents import GraceAgent
 
@@ -37,6 +37,7 @@ def _parse_activity_field(text, field_name):
 def index(request):
     conversations = Conversation.objects.filter(user=request.user).order_by('-created_at')
     students = Child.objects.all()
+    latest_activity = SocialCurriculum.objects.order_by('-created_at').first()
 
     # Build per-child rating summaries for Grace activities
     grace_ct = ContentType.objects.get_for_model(SocialCurriculum)
@@ -61,6 +62,7 @@ def index(request):
         'conversation': None,
         'students': students,
         'children_data': children_data,
+        'current_activity_id': latest_activity.pk if latest_activity else '',
         'children_data_json': json.dumps([{
             'child_id': d['child'].child_id,
             'child_name': d['child'].child_name,
@@ -126,7 +128,7 @@ def send_message(request):
         from sage.views import get_rag_context
         rag = get_rag_context(request.user)
         system = GRACE_SYSTEM_PROMPT + rag
-        assistant_text = get_anthropic_response(messages=messages_for_claude, system_prompt=system)
+        assistant_text, fallback_used = get_agent_response('grace', messages_for_claude, system)
 
         assistant_message_obj = Message.objects.create(
             conversation=conversation,
@@ -167,6 +169,7 @@ def send_message(request):
             'message': assistant_message_obj.content,
             'conversation_id': conversation.id,
             'entry_id': entry.pk if entry else None,
+            'fallback': fallback_used,
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

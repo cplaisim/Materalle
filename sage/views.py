@@ -12,7 +12,8 @@ from .models import Dish, Menu, Meal, MealAttendance, GroceryItem, Schedule, Doc
 from .agents import SageAgent
 from grace.agents import GraceAgent
 from patience.agents import PatienceAgent
-from website.models import LearningSession, Interaction
+from website.models import LearningSession
+from agent.models import Conversation as AgentConversation, Message as AgentMessage
 from materalleapp.agent_base import get_anthropic_response
 from asgiref.sync import sync_to_async
 import json
@@ -82,6 +83,7 @@ def index(request):
         "form": form,
         "students": students,
         "children_data": children_data,
+        "current_activity_id": Dish.objects.order_by('-created_at').values_list('pk', flat=True).first() or '',
         "page": "sage",
     }
     return render(request, "sage/index.html", context)
@@ -96,35 +98,40 @@ async def sage_interaction(request):
         session_id = data.get('session_id',None)
         
         if session_id:
-                session = await sync_to_async(LearningSession.objects.get)(id=session_id)
+            session = await sync_to_async(LearningSession.objects.get)(id=session_id, user=request.user)
         else:
                 # Create a new session if session_id is not provided
                 user = request.user
                 session = await sync_to_async(LearningSession.objects.create)(user=user)
             
         agent = SageAgent()
+        rag_context = await sync_to_async(get_rag_context)(request.user)
+        if rag_context:
+            agent.system_prompt += rag_context
 
-        # Get context from previous interactions
-        context = []
-        previous_interactions = await sync_to_async(list)(
-            Interaction.objects.filter(
-                session=session,
-                agent_type='sage'
-            ).order_by('-timestamp')[:5]
+        conversation, _ = await sync_to_async(AgentConversation.objects.get_or_create)(
+            user=request.user,
+            title=f'Sage - Session {session.pk}',
         )
-
-        for interaction in reversed(previous_interactions):
-            context.append({"role": "user", "content": interaction.content})
-            context.append({"role": "assistant", "content": interaction.response})
+        await sync_to_async(AgentMessage.objects.create)(
+            conversation=conversation,
+            content=message,
+            is_user=True,
+        )
+        recent_messages = await sync_to_async(list)(
+            AgentMessage.objects.filter(conversation=conversation).order_by('-timestamp')[:11]
+        )
+        context = [
+            {'role': 'user' if item.is_user else 'assistant', 'content': item.content}
+            for item in reversed(recent_messages[:-1])
+        ]
         
         response = await agent.get_response(message, context)
 
-        # Save interaction
-        await sync_to_async(Interaction.objects.create)(
-            session=session,
-            agent_type='sage',
-            content=message,
-            response=response
+        await sync_to_async(AgentMessage.objects.create)(
+            conversation=conversation,
+            content=response,
+            is_user=False,
         )
 
         # Create a Dish entry from this chat response
@@ -233,7 +240,8 @@ def activity_dashboard(request):
         })
 
     students = Child.objects.all()
-    children = Child.objects.filter(is_checked_in=True)
+    children = students.order_by('child_name')
+    checked_in_count = students.filter(is_checked_in=True).count()
 
     # Get entries for the selected day
     day_entries = WeeklyPlanEntry.objects.filter(
@@ -300,7 +308,7 @@ def activity_dashboard(request):
         'students': students,
         'children': children,
         'children_json': children_json,
-        'checked_in_count': children.count(),
+        'checked_in_count': checked_in_count,
         'agent_sections': agent_sections,
         'all_activities': all_activities,
         'today': today,
@@ -378,7 +386,7 @@ def grocery_list(request):
 
 @login_required
 def upload_grocery_list(request):
-    from .parser import parse_document, categorize_with_llm, parse_text_items
+    from .parser import VALID_CATEGORIES, parse_document, categorize_with_llm, parse_text_items
 
     if request.method == 'POST':
         try:
@@ -395,7 +403,7 @@ def upload_grocery_list(request):
             else:
                 return JsonResponse({'success': False, 'error': 'No grocery list provided'})
 
-            valid_categories = [c[0] for c in GroceryItem.CATEGORIES]
+            valid_categories = set(VALID_CATEGORIES)
 
             # Pull out conflicts before processing categories
             conflicts = categorized.pop('CONFLICTS', [])
@@ -411,7 +419,7 @@ def upload_grocery_list(request):
             for raw_cat, items in categorized.items():
                 cat = raw_cat.upper().rstrip('S')
                 if cat not in valid_categories:
-                    cat = 'OTHER'
+                    continue
                 if cat not in items_by_category:
                     items_by_category[cat] = []
 
@@ -498,12 +506,14 @@ def clear_grocery_list(request):
 def resolve_grocery_conflicts(request):
     """Save conflict items with user-chosen categories."""
     try:
+        from .parser import VALID_CATEGORIES
+
         data = json.loads(request.body)
         resolved = data.get('resolved', [])  # [{"name": "...", "category": "PROTEIN"}, ...]
         if not resolved:
             return JsonResponse({'success': True, 'created': 0})
 
-        valid_categories = [c[0] for c in GroceryItem.CATEGORIES]
+        valid_categories = set(VALID_CATEGORIES)
         existing_lower = {
             n.lower() for n in
             GroceryItem.objects.filter(added_by=request.user).values_list('name', flat=True)
@@ -514,7 +524,7 @@ def resolve_grocery_conflicts(request):
             name = item.get('name', '').strip().title()
             cat = item.get('category', 'OTHER').upper().rstrip('S')
             if cat not in valid_categories:
-                cat = 'OTHER'
+                continue
             if name and name.lower() not in existing_lower:
                 existing_lower.add(name.lower())
                 to_create.append(GroceryItem(name=name, category=cat, added_by=request.user))
@@ -609,7 +619,7 @@ def upload_documents(request):
 @login_required
 async def upload_grocery_documents(request):
     """Upload and parse grocery documents (receipts, CSVs, etc.)."""
-    from .parser import parse_document
+    from .parser import VALID_CATEGORIES, parse_document
 
     if request.method == 'POST':
         files = request.FILES.getlist('documents')
@@ -648,8 +658,8 @@ async def upload_grocery_documents(request):
 
                     for category, items in categorized_items.items():
                         cat = category.upper().rstrip('S')
-                        if cat not in dict(GroceryItem.CATEGORIES):
-                            cat = 'OTHER'
+                        if cat not in VALID_CATEGORIES:
+                            continue
                         for item in items:
                             name = item.strip().title()
                             if name and name.lower() not in existing_lower:
@@ -1046,6 +1056,7 @@ def weekly_schedule(request):
     current_menu = Menu.objects.filter(created_by=request.user, is_current=True).first()
     if not current_menu:
         current_menu = Menu.objects.filter(created_by=request.user).order_by('-created_at').first()
+    menu_week = _menu_week_for_date(current_menu.menu_data, week_start) if current_menu else None
     has_meal_entries = entries.filter(activity_type='MEAL').exists()
 
     return render(request, 'sage/weekly_schedule.html', {
@@ -1056,10 +1067,102 @@ def weekly_schedule(request):
         'children': children,
         'children_data': children_data,
         'has_schedule': entries.exists(),
-        'has_current_menu': current_menu is not None,
+        'has_current_menu': menu_week is not None,
         'has_meal_entries': has_meal_entries,
-        'current_menu_title': current_menu.title if current_menu else '',
+        'current_menu_title': f'{current_menu.title} — Week of {week_start:%b %d}' if current_menu and menu_week else '',
     })
+
+
+@login_required
+def default_schedule_slots(request):
+    slots = Schedule.objects.filter(is_default=True, day_of_week=0).order_by('start_time')
+    return JsonResponse({
+        'slots': [{
+            'id': slot.pk,
+            'time': slot.start_time.strftime('%I:%M %p').lstrip('0'),
+            'activity': slot.activity,
+        } for slot in slots],
+    })
+
+
+@login_required
+def assign_chat_activity_to_schedule(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        agent = data.get('agent')
+        entry_id = data.get('entry_id')
+        day_of_week = int(data.get('day_of_week', -1))
+        slot = get_object_or_404(
+            Schedule,
+            pk=data.get('schedule_slot_id'),
+            is_default=True,
+            day_of_week=0,
+        )
+
+        if day_of_week < 0 or day_of_week > 4:
+            return JsonResponse({'error': 'Choose a weekday from the schedule.'}, status=400)
+
+        if agent == 'grace':
+            from grace.models import SocialCurriculum
+            activity = get_object_or_404(SocialCurriculum, pk=entry_id)
+            activity_type = activity.activity_type
+        elif agent == 'patience':
+            from patience.models import MotorCurriculum
+            activity = get_object_or_404(MotorCurriculum, pk=entry_id)
+            activity_type = activity.activity_type
+        else:
+            return JsonResponse({'error': 'Only Grace and Patience activities can be assigned here.'}, status=400)
+
+        today = timezone.localdate()
+        week_start = today - timedelta(days=today.weekday())
+        if today.weekday() > 4:
+            week_start += timedelta(days=7)
+        scheduled_date = week_start + timedelta(days=day_of_week)
+        if scheduled_date < today:
+            return JsonResponse({'error': 'Choose today or a later day this week.'}, status=400)
+
+        existing_entry = WeeklyPlanEntry.objects.filter(
+            week_start_date=week_start,
+            scheduled_date=scheduled_date,
+            start_time=slot.start_time,
+        ).order_by('-created_at').first()
+        if existing_entry and existing_entry.activity_type == 'MEAL':
+            return JsonResponse({
+                'error': 'A menu meal already occupies this time. Choose another default time slot.'
+            }, status=409)
+
+        values = {
+            'agent': agent,
+            'title': activity.title[:200],
+            'activity_type': activity_type,
+            'description': activity.description,
+            'is_static': False,
+            'guideline_activity': slot.activity,
+            'created_by': request.user,
+        }
+        if existing_entry:
+            for field, value in values.items():
+                setattr(existing_entry, field, value)
+            existing_entry.save()
+            entry = existing_entry
+        else:
+            entry = WeeklyPlanEntry.objects.create(
+                week_start_date=week_start,
+                scheduled_date=scheduled_date,
+                start_time=slot.start_time,
+                **values,
+            )
+
+        return JsonResponse({
+            'success': True,
+            'entry_id': entry.pk,
+            'message': f'{activity.title} added to {scheduled_date:%A} at {slot.start_time.strftime("%I:%M %p").lstrip("0")}.',
+        })
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        return JsonResponse({'error': str(exc) or 'Invalid schedule request.'}, status=400)
 
 
 @login_required
@@ -1080,14 +1183,19 @@ def apply_menu_to_schedule(request):
         if not current_menu:
             return JsonResponse({'success': False, 'error': 'No menu found. Generate a menu first.'})
 
+        menu_data = current_menu.menu_data
+        menu_week = _menu_week_for_date(menu_data, week_start)
+        if not menu_week:
+            return JsonResponse({
+                'success': False,
+                'error': 'No accepted menu is saved for this schedule week.',
+            }, status=404)
+
         # Remove existing MEAL entries for this week
         WeeklyPlanEntry.objects.filter(
             week_start_date=week_start,
             activity_type='MEAL',
         ).delete()
-
-        menu_data = current_menu.menu_data
-        week1 = menu_data.get('Week 1', {})
 
         # Map display names back to schedule times via SAGE_MEAL_MAP
         meal_display_to_key = {
@@ -1121,7 +1229,7 @@ def apply_menu_to_schedule(request):
                     break
 
         created = 0
-        for meal_display, meal_data in week1.items():
+        for meal_display, meal_data in menu_week.items():
             hour = meal_times.get(meal_display, default_meal_times.get(meal_display))
             if hour is None:
                 continue
@@ -1397,28 +1505,112 @@ def generate_attendance(request):
 def send_report(request):
     return render(request, 'sage/send_report.html')
 
+
+def _menu_week_keys(menu_data):
+    return sorted(
+        (key for key in menu_data if key.startswith('Week ') and key[5:].isdigit()),
+        key=lambda key: int(key[5:]),
+    )
+
+
+def _menu_week_for_date(menu_data, week_start):
+    start_value = menu_data.get('_workflow', {}).get('start_date')
+    if start_value:
+        menu_start = date.fromisoformat(start_value)
+        days_from_start = (week_start - menu_start).days
+        if days_from_start < 0 or days_from_start % 7:
+            return None
+        week_number = days_from_start // 7 + 1
+    else:
+        week_number = 1
+
+    if week_number > 4:
+        return None
+    return menu_data.get(f'Week {week_number}')
+
+
+def _menu_page_context(user):
+    menu_record = Menu.objects.filter(created_by=user, is_current=True).first()
+    if not menu_record:
+        menu_record = Menu.objects.filter(created_by=user).order_by('-created_at').first()
+
+    stored_data = menu_record.menu_data if menu_record else {}
+    accepted_keys = _menu_week_keys(stored_data)
+    return {
+        'dishes': Dish.objects.all().order_by('-created_at'),
+        'grocery_items': GroceryItem.objects.filter(added_by=user).order_by('category', 'name'),
+        'initial_menu': {key: stored_data[key] for key in accepted_keys},
+        'pending_week': stored_data.get('_pending_week'),
+        'accepted_week_count': len(accepted_keys),
+        'menu_complete': len(accepted_keys) >= 4,
+        'next_week_number': min(len(accepted_keys) + 1, 4),
+    }
+
+
 @login_required
 def generate_menu(request):
     if request.method == 'GET':
-        dishes = Dish.objects.all().order_by('-created_at')
-        grocery_items = GroceryItem.objects.all().order_by('category', 'name')
-        context = {
-            'dishes': dishes,
-            'grocery_items': grocery_items,
-        }
-        return render(request, 'sage/generate_menu.html', context)
+        return render(request, 'sage/generate_menu.html', _menu_page_context(request.user))
 
     if request.method == 'POST':
         try:
             data = json.loads(request.body.decode('utf-8'))
             selected_item_ids = data.get('grocery_item_ids', [])
-            period_weeks = int(data.get('period', 4))
+            action = data.get('action', 'generate')
+            if action not in ('generate', 'regenerate'):
+                return JsonResponse({'error': 'Invalid menu action.'}, status=400)
+
+            today = timezone.now().date()
+            default_start_date = today + timedelta(days=(7 - today.weekday()) % 7)
+            current_menu = Menu.objects.filter(created_by=request.user, is_current=True).first()
+            if current_menu:
+                stored_menu = current_menu.menu_data
+                accepted_keys = _menu_week_keys(stored_menu)
+            else:
+                stored_menu = {}
+                accepted_keys = []
+
+            if len(accepted_keys) >= 4:
+                if current_menu and current_menu.month_year == default_start_date.strftime('%b-%y'):
+                    return JsonResponse({
+                        'error': 'All four weeks are accepted for this month. The monthly menu report is complete.'
+                    }, status=400)
+                if current_menu:
+                    current_menu.is_current = False
+                    current_menu.save(update_fields=['is_current'])
+                current_menu = None
+                stored_menu = {}
+                accepted_keys = []
+
+            if current_menu:
+                workflow = stored_menu.get('_workflow', {})
+                start_date = date.fromisoformat(workflow['start_date']) if workflow.get('start_date') else default_start_date
+            else:
+                start_date = default_start_date
+                month_year = start_date.strftime('%b-%y')
+                Menu.objects.filter(created_by=request.user, is_current=True).update(is_current=False)
+                current_menu = Menu.objects.create(
+                    title=f'Menu {month_year}',
+                    provider_name=data.get('provider_name', ''),
+                    provider_address=data.get('provider_address', ''),
+                    month_year=month_year,
+                    menu_data_json=json.dumps({}),
+                    created_by=request.user,
+                    is_current=True,
+                )
+                stored_menu = {}
+
+            week_number = len(accepted_keys) + 1
+            start_date += timedelta(weeks=week_number - 1)
+            stored_menu['_workflow'] = {
+                'start_date': (start_date - timedelta(weeks=week_number - 1)).isoformat(),
+            }
 
             # Get selected grocery items grouped by category
             if selected_item_ids:
-                items = GroceryItem.objects.filter(id__in=selected_item_ids)
+                items = GroceryItem.objects.filter(added_by=request.user, id__in=selected_item_ids)
             else:
-                items = GroceryItem.objects.all()
+                items = GroceryItem.objects.filter(added_by=request.user)
 
             if not items.exists():
                 return JsonResponse({"error": "No grocery items selected. Add items to your grocery list first."}, status=400)
@@ -1468,119 +1660,92 @@ def generate_menu(request):
                 pool = items_by_cat.get(category, [])
                 return random.choice(pool) if pool else ""
 
-            # Set up dates
-            today = timezone.now().date()
-            start_date = today + timedelta(days=(7 - today.weekday()) % 7)
+            week_key = f'Week {week_number}'
+            week_menu = {}
 
-            menu = {}
-            created_dishes = []
+            for mt in meal_types_order:
+                display_name = meal_type_display[mt]
+                pattern = cacfp_patterns[mt]
 
-            for week_num in range(period_weeks):
-                week_key = f"Week {week_num + 1}"
-                week_menu = {}
+                meal_data = {
+                    "components": [
+                        {"name": "Vegetable", "items": {}},
+                        {"name": "Fruit", "items": {}},
+                        {"name": "Grain", "items": {}},
+                        {"name": "Protein", "items": {}},
+                        {"name": "Drink", "items": {}},
+                    ],
+                    "titles": {},
+                }
 
-                for mt in meal_types_order:
-                    display_name = meal_type_display[mt]
-                    pattern = cacfp_patterns[mt]
+                for day in weekdays:
+                    veg, fruit, grain, protein, drink = "", "", "", "", ""
 
-                    meal_data = {
-                        "components": [
-                            {"name": "Vegetable", "items": {}},
-                            {"name": "Fruit", "items": {}},
-                            {"name": "Grain", "items": {}},
-                            {"name": "Protein", "items": {}},
-                            {"name": "Drink", "items": {}},
-                        ],
-                        "titles": {},
-                    }
-
-                    for day in weekdays:
-                        veg, fruit, grain, protein, drink = "", "", "", "", ""
-
-                        if 'pick_two' in pattern:
-                            # Snacks: pick 2 different available categories
-                            available = [c for c in pattern['pick_two'] if items_by_cat.get(c)]
-                            chosen = random.sample(available, min(2, len(available))) if available else []
-                            for cat in chosen:
-                                val = pick(cat)
-                                if cat == 'VEGETABLE': veg = val
-                                elif cat == 'FRUIT': fruit = val
-                                elif cat == 'GRAIN': grain = val
-                                elif cat == 'PROTEIN': protein = val
-                                elif cat == 'DRINK': drink = val
-                        else:
-                            # Full meals: fill required components
-                            if 'GRAIN' in pattern.get('required', []):
-                                grain = pick('GRAIN')
-                            if 'PROTEIN' in pattern.get('required', []):
-                                protein = pick('PROTEIN')
-                            if 'DRINK' in pattern.get('required', []):
-                                drink = pick('DRINK') or "1% MILK"
-                            if pattern.get('veg_required'):
-                                veg = pick('VEGETABLE')
-                            if pattern.get('fruit_required'):
-                                fruit = pick('FRUIT')
-                            if pattern.get('fruit_or_veg'):
-                                # Breakfast: pick fruit or vegetable
-                                if items_by_cat.get('FRUIT') and items_by_cat.get('VEGETABLE'):
-                                    if random.random() < 0.5:
-                                        fruit = pick('FRUIT')
-                                    else:
-                                        veg = pick('VEGETABLE')
-                                elif items_by_cat.get('FRUIT'):
+                    if 'pick_two' in pattern:
+                        available = [c for c in pattern['pick_two'] if items_by_cat.get(c)]
+                        chosen = random.sample(available, min(2, len(available))) if available else []
+                        for cat in chosen:
+                            val = pick(cat)
+                            if cat == 'VEGETABLE': veg = val
+                            elif cat == 'FRUIT': fruit = val
+                            elif cat == 'GRAIN': grain = val
+                            elif cat == 'PROTEIN': protein = val
+                            elif cat == 'DRINK': drink = val
+                    else:
+                        if 'GRAIN' in pattern.get('required', []):
+                            grain = pick('GRAIN')
+                        if 'PROTEIN' in pattern.get('required', []):
+                            protein = pick('PROTEIN')
+                        if 'DRINK' in pattern.get('required', []):
+                            drink = pick('DRINK') or "1% MILK"
+                        if pattern.get('veg_required'):
+                            veg = pick('VEGETABLE')
+                        if pattern.get('fruit_required'):
+                            fruit = pick('FRUIT')
+                        if pattern.get('fruit_or_veg'):
+                            if items_by_cat.get('FRUIT') and items_by_cat.get('VEGETABLE'):
+                                if random.random() < 0.5:
                                     fruit = pick('FRUIT')
                                 else:
                                     veg = pick('VEGETABLE')
+                            elif items_by_cat.get('FRUIT'):
+                                fruit = pick('FRUIT')
+                            else:
+                                veg = pick('VEGETABLE')
 
-                        # Title from protein & grain
-                        parts = [p for p in [protein, grain] if p]
-                        title = " and ".join(parts) if parts else "Untitled"
+                    parts = [p for p in [protein, grain] if p]
+                    title = " and ".join(parts) if parts else "Untitled"
+                    meal_data["titles"][day] = title
+                    meal_data["components"][0]["items"][day] = veg
+                    meal_data["components"][1]["items"][day] = fruit
+                    meal_data["components"][2]["items"][day] = grain
+                    meal_data["components"][3]["items"][day] = protein
+                    meal_data["components"][4]["items"][day] = drink
 
-                        meal_data["titles"][day] = title
-                        meal_data["components"][0]["items"][day] = veg
-                        meal_data["components"][1]["items"][day] = fruit
-                        meal_data["components"][2]["items"][day] = grain
-                        meal_data["components"][3]["items"][day] = protein
-                        meal_data["components"][4]["items"][day] = drink
+                week_menu[display_name] = meal_data
 
-                        # Create a Dish record for each meal/day
-                        dish = Dish.objects.create(
-                            meal_type=mt,
-                            vegetable=veg,
-                            fruit=fruit,
-                            grain=grain,
-                            protein=protein,
-                            drink=drink,
-                        )
-                        created_dishes.append(dish)
-
-                    week_menu[display_name] = meal_data
-                menu[week_key] = week_menu
-
-            end_date = start_date + timedelta(weeks=period_weeks) - timedelta(days=3)
-
-            # Save menu to database and mark as current
-            month_year = start_date.strftime("%b-%y")
-            Menu.objects.filter(created_by=request.user, is_current=True).update(is_current=False)
-            menu_record = Menu.objects.create(
-                title=f"Menu {month_year}",
-                provider_name=data.get('provider_name', ''),
-                provider_address=data.get('provider_address', ''),
-                month_year=month_year,
-                menu_data_json=json.dumps(menu),
-                created_by=request.user,
-                is_current=True,
-            )
+            end_date = start_date + timedelta(days=4)
+            draft_menu = {week_key: week_menu}
+            date_range = {
+                'start': start_date.isoformat(),
+                'end': end_date.isoformat(),
+                'weeks': 1,
+                'week_number': week_number,
+            }
+            stored_menu['_pending_week'] = {
+                'week_number': week_number,
+                'menu': week_menu,
+                'date_range': date_range,
+            }
+            current_menu.menu_data = stored_menu
+            current_menu.save(update_fields=['menu_data_json', 'updated_at'])
 
             return JsonResponse({
-                "menu": menu,
-                "menu_id": menu_record.pk,
-                "dishes_created": len(created_dishes),
-                "date_range": {
-                    "start": start_date.isoformat(),
-                    "end": end_date.isoformat(),
-                    "weeks": period_weeks,
-                },
+                'menu': draft_menu,
+                'menu_id': current_menu.pk,
+                'week_number': week_number,
+                'accepted_week_count': len(accepted_keys),
+                'date_range': date_range,
             })
 
         except json.JSONDecodeError as e:
@@ -1589,17 +1754,72 @@ def generate_menu(request):
             return JsonResponse({"error": f"Error generating menu: {str(e)}"}, status=500)
 
 @login_required
-def current_menu(request):
-    """Show the current menu on the generate_menu template."""
-    menu_obj = Menu.objects.filter(created_by=request.user, is_current=True).first()
-    if not menu_obj:
-        menu_obj = Menu.objects.filter(created_by=request.user).order_by('-created_at').first()
+@require_http_methods(['POST'])
+def accept_menu_week(request):
+    menu_record = Menu.objects.filter(created_by=request.user, is_current=True).first()
+    if not menu_record:
+        return JsonResponse({'error': 'No menu draft is available to accept.'}, status=400)
 
-    return render(request, 'sage/generate_menu.html', {
-        'dishes': Dish.objects.all().order_by('-created_at'),
-        'grocery_items': GroceryItem.objects.all().order_by('category', 'name'),
-        'initial_menu': menu_obj.menu_data if menu_obj else None,
+    menu_data = menu_record.menu_data
+    pending = menu_data.get('_pending_week')
+    if not pending:
+        return JsonResponse({'error': 'Generate a weekly menu before accepting it.'}, status=400)
+
+    accepted_keys = _menu_week_keys(menu_data)
+    week_number = int(pending.get('week_number', 0))
+    if week_number != len(accepted_keys) + 1 or week_number > 4:
+        return JsonResponse({'error': 'This week is not the next week awaiting acceptance.'}, status=409)
+
+    week_menu = pending['menu']
+    meal_type_codes = {
+        'BREAKFAST': 'BREAKFAST',
+        'A.M. SNACK': 'AM_SNACK',
+        'LUNCH': 'LUNCH',
+        'P.M. SNACK': 'PM_SNACK',
+        'SUPPER': 'SUPPER',
+    }
+    component_fields = {
+        'vegetable': 'vegetable',
+        'fruit': 'fruit',
+        'grain': 'grain',
+        'protein': 'protein',
+        'drink': 'drink',
+    }
+
+    from django.db import transaction
+
+    with transaction.atomic():
+        for meal_name, meal_data in week_menu.items():
+            component_items = {
+                component.get('name', '').lower(): component.get('items', {})
+                for component in meal_data.get('components', [])
+            }
+            for day in ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'):
+                fields = {
+                    field: component_items.get(component, {}).get(day, '')
+                    for component, field in component_fields.items()
+                }
+                Dish.objects.create(meal_type=meal_type_codes[meal_name], **fields)
+
+        menu_data[f'Week {week_number}'] = week_menu
+        menu_data.pop('_pending_week', None)
+        menu_record.menu_data = menu_data
+        menu_record.save(update_fields=['menu_data_json', 'updated_at'])
+
+    accepted_count = len(_menu_week_keys(menu_data))
+    return JsonResponse({
+        'success': True,
+        'accepted_week': week_number,
+        'accepted_week_count': accepted_count,
+        'complete': accepted_count == 4,
+        'next_week_number': min(accepted_count + 1, 4),
     })
+
+
+@login_required
+def current_menu(request):
+    """Show accepted weeks and any pending weekly draft."""
+    return render(request, 'sage/generate_menu.html', _menu_page_context(request.user))
 
 
 def attendance_report(request):

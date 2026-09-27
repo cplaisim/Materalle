@@ -42,6 +42,38 @@
         {% endif %}
     </div>
 
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100" style="border: none; border-radius: 12px;">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #faf8f5; border-bottom: 1px solid #e8e0d8;">
+                    <h5 class="card-title mb-0"><i class="fas fa-clipboard-check me-1"></i>Today's Attendance</h5>
+                    <a href="{% url 'enroll:attendance' %}" class="btn btn-sm btn-outline-primary">Manage attendance</a>
+                </div>
+                <div class="card-body p-0" style="max-height: 340px; overflow-y: auto;">
+                    <div class="d-flex justify-content-between px-3 py-2 border-bottom small text-muted">
+                        <span>{{ children|length }} enrolled</span>
+                        <span>{{ checked_in_count }} present</span>
+                    </div>
+                    <div class="row g-0">
+                        {% for child in children %}
+                        <div class="col-sm-6">
+                            <div class="d-flex justify-content-between align-items-center gap-2 px-3 py-2 border-bottom">
+                                <span class="text-truncate">{{ child.child_name }}</span>
+                                {% if child.is_checked_in %}
+                                <span class="badge bg-success">Present</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Not present</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center text-muted py-4">No children enrolled yet.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
     {% if has_schedule %}
     <!-- Activity Carousel (one at a time) -->
     <div class="card shadow-sm mb-4" style="border: none; border-radius: 12px;">
@@ -80,12 +112,26 @@
         </div>
     </div>
 
-    <!-- Checked-in Children with Ratings -->
+    {% else %}
+    <div class="card shadow-sm h-100" style="border: none; border-radius: 12px;">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-calendar-day fa-3x text-muted mb-3"></i>
+            <p class="text-muted mb-1">No activities scheduled for {{ selected_date|date:"l, M d" }}.</p>
+            <p class="small text-muted">Generate a <a href="{% url 'sage:weekly_schedule' %}">weekly schedule</a> to see activities here.</p>
+        </div>
+    </div>
+    {% endif %}
+        </div>
+    </div>
+
+    {% if has_schedule %}
+    <!-- All Children with Ratings -->
     <div class="card shadow-sm" style="border: none; border-radius: 12px;">
         <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #faf8f5; border-bottom: 1px solid #e8e0d8; border-radius: 12px 12px 0 0;">
-            <h5 class="card-title mb-0"><i class="fas fa-child me-1"></i>Participants</h5>
+            <h5 class="card-title mb-0"><i class="fas fa-child me-1"></i>Rate Activity for Each Child</h5>
             <div class="d-flex gap-2 align-items-center">
-                <span class="badge bg-secondary">{{ checked_in_count }} checked in</span>
+                <span class="badge bg-success">{{ checked_in_count }} present</span>
+                <span class="badge bg-secondary">{{ children|length }} enrolled</span>
                 <button class="btn btn-sm btn-outline-primary" id="saveAllRatingsBtn" style="display:none;">
                     <i class="fas fa-check me-1"></i>Save All
                 </button>
@@ -99,7 +145,11 @@
                  data-child-id="{{ child.child_id }}">
                 <div>
                     <a href="{% url 'enroll:child_dashboard' child_id=child.child_id %}" class="fw-semibold text-decoration-none" style="color:#333;">{{ child.child_name }}</a>
+                    {% if child.is_checked_in %}
                     <span class="badge bg-success ms-1" style="font-size:0.6rem;">Present</span>
+                    {% else %}
+                    <span class="badge bg-secondary ms-1" style="font-size:0.6rem;">Not present</span>
+                    {% endif %}
                 </div>
                 <div class="d-flex gap-1">
                     <button class="rate-btn" data-child="{{ child.child_id }}" data-rating="3" title="Like"><span style="font-size:1.3rem;">😄</span></button>
@@ -109,19 +159,11 @@
             </div>
             {% endfor %}
             {% else %}
-            <div class="text-center text-muted py-4">No children checked in.</div>
+            <div class="text-center text-muted py-4">No children enrolled yet.</div>
             {% endif %}
         </div>
     </div>
 
-    {% else %}
-    <div class="card shadow-sm" style="border: none; border-radius: 12px;">
-        <div class="card-body text-center py-5">
-            <i class="fas fa-calendar-day fa-3x text-muted mb-3"></i>
-            <p class="text-muted mb-1">No activities scheduled for {{ selected_date|date:"l, M d" }}.</p>
-            <p class="small text-muted">Generate a <a href="{% url 'sage:weekly_schedule' %}">weekly schedule</a> to see activities here.</p>
-        </div>
-    </div>
     {% endif %}
 </div>
 

@@ -38,6 +38,7 @@
         </form>
     </div>
 </div>
+{% include 'enroll/schedule_activity_dialog.html' %}
 
 <script>
 (function() {
@@ -59,19 +60,7 @@
             if (el) el.addEventListener('click', function() { input.value = quickActions[id]; });
         });
 
-        // Get the active child from the participant carousel
-        function getActiveChild() {
-            var activeSlide = document.querySelector('.child-slide:not(.d-none)');
-            if (!activeSlide) return null;
-            var childId = activeSlide.querySelector('.child-id');
-            var nameEl = activeSlide.querySelector('h5 a, h6 a');
-            return {
-                id: childId ? childId.value : null,
-                name: nameEl ? nameEl.textContent.trim() : 'child'
-            };
-        }
-
-        function formatResponse(text, entryId) {
+        function formatResponse(text) {
             var fieldPattern = /\*\*(\w[\w\s&\-]*?):\*\*\s*([\s\S]*?)(?=\n\*\*|\s*$)/g;
             var matches = [];
             var match;
@@ -96,23 +85,9 @@
                 }
             });
 
-            // Rate for child button
-            var rateSection = '';
-            if (entryId) {
-                var child = getActiveChild();
-                var childName = child ? child.name : '';
-                rateSection = '<div class="chat-rate-section mt-2 d-flex align-items-center gap-2" data-entry-id="' + entryId + '">' +
-                    '<span class="text-muted" style="font-size:0.75rem;">Rate for <strong class="rate-child-name">' + childName + '</strong>:</span>' +
-                    '<div class="btn-group btn-group-sm">' +
-                    '<button type="button" class="btn btn-outline-secondary chat-rate-btn" data-rating="1" title="Not great">😞</button>' +
-                    '<button type="button" class="btn btn-outline-secondary chat-rate-btn" data-rating="2" title="Okay">😐</button>' +
-                    '<button type="button" class="btn btn-outline-secondary chat-rate-btn" data-rating="3" title="Great">😄</button>' +
-                    '</div></div>';
-            }
-
             return title +
                 '<table class="table table-sm table-borderless mb-0" style="font-size:0.9rem;">' +
-                '<tbody>' + rows.join('') + '</tbody></table>' + rateSection;
+                '<tbody>' + rows.join('') + '</tbody></table>';
         }
 
         var progressBar = document.getElementById('llmProgressBar');
@@ -151,7 +126,7 @@
                 if (data.conversation_id) {
                     conversationIdInput.value = data.conversation_id;
                 }
-                var formatted = formatResponse(data.message || '', data.entry_id);
+                var formatted = formatResponse(data.message || '');
                 var assistantDiv = document.createElement('div');
                 assistantDiv.className = 'message assistant-message mb-2';
                 assistantDiv.innerHTML = '<div class="d-flex align-items-start"><img src="{% static "images/patience.jpg" %}" alt="Patience" class="rounded-circle me-2" style="width:28px;height:28px;object-fit:cover;"><div class="message-content p-2 rounded">' + formatted + '</div></div>';
@@ -159,6 +134,9 @@
                 messageContainer.scrollTop = messageContainer.scrollHeight;
                 if (data.entry_id) {
                     document.dispatchEvent(new CustomEvent('agentEntry', { detail: { entry_id: data.entry_id } }));
+                    document.dispatchEvent(new CustomEvent('agentActivityGenerated', {
+                        detail: { assistantElement: assistantDiv, entryId: data.entry_id, agent: 'patience', text: data.message || '' }
+                    }));
                 }
             })
             .catch(function(err) {
@@ -172,73 +150,6 @@
             });
         });
 
-        // Handle inline rate button clicks in chat responses
-        messageContainer.addEventListener('click', function(e) {
-            var btn = e.target.closest('.chat-rate-btn');
-            if (!btn) return;
-
-            var rateSection = btn.closest('.chat-rate-section');
-            var entryId = rateSection.getAttribute('data-entry-id');
-            var child = getActiveChild();
-
-            if (!child || !child.id) {
-                alert('No active child displayed. Check in a child first.');
-                return;
-            }
-
-            var rateValue = btn.getAttribute('data-rating');
-            var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-            fetch('{% url "enroll:rate_student" %}', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrfToken },
-                body: 'page=patience&child_id=' + child.id + '&rate_value=' + rateValue + '&object_id=' + entryId + '&csrfmiddlewaretoken=' + csrfToken
-            })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                if (data.status === 'success') {
-                    rateSection.querySelectorAll('.chat-rate-btn').forEach(function(b) {
-                        b.classList.remove('active', 'btn-primary');
-                        b.classList.add('btn-outline-secondary');
-                    });
-                    btn.classList.remove('btn-outline-secondary');
-                    btn.classList.add('active', 'btn-primary');
-                    var nameEl = rateSection.querySelector('.rate-child-name');
-                    if (nameEl) nameEl.innerHTML = child.name + ' <i class="fas fa-check text-success"></i>';
-                    // Update the active participant card stats
-                    var activeSlide = document.querySelector('.child-slide:not(.d-none)');
-                    if (activeSlide) {
-                        var statMap = {'3': 'likes', '2': 'normals', '1': 'dislikes'};
-                        var statKey = statMap[rateValue];
-                        if (statKey) {
-                            var el = activeSlide.querySelector('[data-stat="' + statKey + '"]');
-                            if (el) el.textContent = parseInt(el.textContent) + 1;
-                        }
-                        var totalEl = activeSlide.querySelector('[data-stat="total"]');
-                        if (totalEl) totalEl.textContent = parseInt(totalEl.textContent) + 1;
-                    }
-                } else {
-                    alert('Error: ' + (data.message || 'Rating failed'));
-                }
-            })
-            .catch(function(err) { alert('Error: ' + err.message); });
-        });
-
-        // When the active child changes, update all visible rate labels
-        var observer = new MutationObserver(function() {
-            var child = getActiveChild();
-            if (child) {
-                document.querySelectorAll('.rate-child-name').forEach(function(el) {
-                    if (!el.querySelector('.fa-check')) {
-                        el.textContent = child.name;
-                    }
-                });
-            }
-        });
-        var carousel = document.getElementById('childCarousel');
-        if (carousel) {
-            observer.observe(carousel, { attributes: true, subtree: true, attributeFilter: ['class'] });
-        }
     });
 })();
 </script>

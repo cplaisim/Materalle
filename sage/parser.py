@@ -16,20 +16,19 @@ from PIL import Image
 
 from materalleapp.agent_base import get_anthropic_response
 
-VALID_CATEGORIES = ["VEGETABLE", "FRUIT", "GRAIN", "PROTEIN", "DRINK", "OTHER"]
+VALID_CATEGORIES = ["VEGETABLE", "FRUIT", "GRAIN", "PROTEIN"]
 
 CATEGORIZE_PROMPT = (
     "You are a grocery item categorizer. "
-    "Categorize each item into EXACTLY one of: VEGETABLE, FRUIT, GRAIN, PROTEIN, DRINK, OTHER.\n\n"
+    "Categorize each suitable item into exactly one of: VEGETABLE, FRUIT, GRAIN, PROTEIN.\n\n"
     "Rules:\n"
-    "- Ignore prices, quantities, totals, tax lines, store names, dates, and non-food items.\n"
-    "- Only include actual food/grocery items.\n"
-    "- If an item could belong to multiple categories, pick the BEST one and also list it under \"CONFLICTS\" with possible categories.\n"
+    "- Choose the closest category for foods that reasonably fit one of the four categories.\n"
+    "- Omit drinks, non-food items, and any item that does not reasonably fit these categories.\n"
+    "- When an item could fit more than one category, choose its best fit; do not create conflicts.\n"
     "- Respond with ONLY a JSON object, no other text.\n\n"
     "Example response:\n"
     '{{"VEGETABLE": ["carrots", "broccoli"], "FRUIT": ["apples"], '
-    '"GRAIN": ["bread"], "PROTEIN": ["chicken"], "DRINK": ["orange juice"], "OTHER": ["salt"], '
-    '"CONFLICTS": [{{"name": "tomato paste", "suggested": "VEGETABLE", "alternatives": ["OTHER"]}}]}}\n\n'
+    '"GRAIN": ["bread"], "PROTEIN": ["chicken"]}}\n\n'
     "Items:\n{items_text}"
 )
 
@@ -212,9 +211,8 @@ def parse_csv_file(file) -> dict[str, list[str]]:
                 continue
             if cat_idx is not None and cat_idx < len(row):
                 cat = row[cat_idx].strip().upper().rstrip("S")
-                if cat not in VALID_CATEGORIES:
-                    cat = "OTHER"
-                result[cat].append(name)
+                if cat in VALID_CATEGORIES:
+                    result[cat].append(name)
             else:
                 uncategorized.append(name)
 
@@ -265,9 +263,7 @@ def categorize_with_llm(items: list[str]) -> dict:
     Returns categorized items with conflict resolution.
     """
     if not items:
-        result = {cat: [] for cat in VALID_CATEGORIES}
-        result["CONFLICTS"] = []
-        return result
+        return {cat: [] for cat in VALID_CATEGORIES}
 
     prompt = CATEGORIZE_PROMPT.format(items_text="\n".join(items))
     messages = [{"role": "user", "content": prompt}]
@@ -275,48 +271,25 @@ def categorize_with_llm(items: list[str]) -> dict:
 
     json_match = re.search(r"\{[\s\S]*\}", response)
     if not json_match:
-        return {"OTHER": items, "CONFLICTS": []}
+        return {cat: [] for cat in VALID_CATEGORIES}
 
     try:
         parsed = json.loads(json_match.group(0))
     except json.JSONDecodeError:
-        return {"OTHER": items, "CONFLICTS": []}
-
-    conflicts = []
-    raw_conflicts = parsed.pop("CONFLICTS", [])
-    if isinstance(raw_conflicts, list):
-        conflict_names = set()
-        for c in raw_conflicts:
-            if isinstance(c, dict) and "name" in c:
-                name = c["name"].strip().title()
-                suggested = c.get("suggested", "OTHER").upper().rstrip("S")
-                if suggested not in VALID_CATEGORIES:
-                    suggested = "OTHER"
-                alts = [
-                    a.upper().rstrip("S") for a in c.get("alternatives", [])
-                    if a.upper().rstrip("S") in VALID_CATEGORIES
-                ]
-                all_options = [suggested] + [a for a in alts if a != suggested]
-                conflicts.append({
-                    "name": name,
-                    "suggested": suggested,
-                    "alternatives": all_options,
-                })
-                conflict_names.add(name.lower())
+        return {cat: [] for cat in VALID_CATEGORIES}
 
     result = {cat: [] for cat in VALID_CATEGORIES}
-    conflict_names_lower = {c["name"].lower() for c in conflicts}
-
     for raw_key, values in parsed.items():
         key = raw_key.strip().upper().rstrip("S")
         if key not in VALID_CATEGORIES:
-            key = "OTHER"
+            continue
+        if isinstance(values, str):
+            values = [values]
         if isinstance(values, list):
             for v in values:
-                if v.strip().title().lower() not in conflict_names_lower:
-                    result[key].append(v)
+                if isinstance(v, str) and v.strip():
+                    result[key].append(v.strip())
 
-    result["CONFLICTS"] = conflicts
     return result
 
 

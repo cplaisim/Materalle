@@ -1,0 +1,192 @@
+<dialog class="schedule-activity-dialog" aria-labelledby="scheduleActivityTitle">
+    <form id="scheduleActivityForm">
+        {% csrf_token %}
+        <h2 class="h5 mb-1" id="scheduleActivityTitle">Save activity to schedule</h2>
+        <p class="text-muted small mb-3" id="scheduleActivityName"></p>
+
+        <label class="form-label" for="scheduleActivityDay">Weekday</label>
+        <select class="form-select mb-3" id="scheduleActivityDay" required>
+            <option value="0">Monday</option>
+            <option value="1">Tuesday</option>
+            <option value="2">Wednesday</option>
+            <option value="3">Thursday</option>
+            <option value="4">Friday</option>
+        </select>
+
+        <label class="form-label" for="scheduleActivitySlot">Default schedule time</label>
+        <select class="form-select" id="scheduleActivitySlot" required>
+            <option value="">Loading default schedule...</option>
+        </select>
+
+        <div class="small mt-2" id="scheduleActivityStatus" aria-live="polite"></div>
+        <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-outline-secondary" id="cancelScheduleActivity">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="confirmScheduleActivity">Save to schedule</button>
+        </div>
+    </form>
+</dialog>
+
+<style>
+.schedule-activity-dialog {
+    width: min(440px, calc(100vw - 2rem));
+    border: 0;
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
+}
+.schedule-activity-dialog::backdrop {
+    background: rgba(20, 28, 25, 0.48);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dialog = document.querySelector('.schedule-activity-dialog');
+    const form = document.getElementById('scheduleActivityForm');
+    if (!dialog || !form) return;
+
+    const daySelect = document.getElementById('scheduleActivityDay');
+    const slotSelect = document.getElementById('scheduleActivitySlot');
+    const activityName = document.getElementById('scheduleActivityName');
+    const status = document.getElementById('scheduleActivityStatus');
+    const confirmButton = document.getElementById('confirmScheduleActivity');
+    let selectedActivity = null;
+    let slotsLoaded = false;
+    let slotLoadPromise = null;
+
+    function selectUpcomingDay() {
+        const today = new Date().getDay();
+        const currentWeekday = today >= 1 && today <= 5 ? today - 1 : 0;
+        daySelect.value = String(currentWeekday);
+        Array.from(daySelect.options).forEach(function(option) {
+            option.disabled = today >= 1 && today <= 5 && Number(option.value) < currentWeekday;
+        });
+    }
+
+    async function loadDefaultSlots() {
+        if (slotsLoaded) return;
+        if (!slotLoadPromise) {
+            slotLoadPromise = fetch('{% url "sage:default_schedule_slots" %}', { credentials: 'same-origin' })
+                .then(function(response) {
+                    if (!response.ok) throw new Error('Could not load the default schedule.');
+                    return response.json();
+                })
+                .then(function(data) {
+                    slotSelect.replaceChildren();
+                    (data.slots || []).forEach(function(slot) {
+                        const option = document.createElement('option');
+                        option.value = slot.id;
+                        option.textContent = slot.time + ' · ' + (slot.activity || 'Default activity');
+                        slotSelect.appendChild(option);
+                    });
+                    if (!data.slots || !data.slots.length) {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = 'No default time slots available';
+                        slotSelect.appendChild(option);
+                        confirmButton.disabled = true;
+                        status.textContent = 'Set a default schedule before assigning activities.';
+                        status.className = 'small mt-2 text-warning';
+                    }
+                    slotsLoaded = true;
+                });
+        }
+        return slotLoadPromise;
+    }
+
+    slotSelect.addEventListener('change', function() {
+        confirmButton.disabled = !slotSelect.value;
+    });
+
+    function getField(text, name) {
+        const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const match = text.match(new RegExp('\\*\\*' + escapedName + ':\\*\\*\\s*([\\s\\S]*?)(?=\\n\\*\\*|$)'));
+        return match ? match[1].trim() : '';
+    }
+
+    document.addEventListener('agentActivityGenerated', function(event) {
+        const detail = event.detail || {};
+        if (!detail.assistantElement || !detail.entryId) return;
+
+        const activity = {
+            entry_id: detail.entryId,
+            agent: detail.agent,
+            title: getField(detail.text || '', 'Title'),
+            activity_type: getField(detail.text || '', 'Activity Type'),
+            description: getField(detail.text || '', 'Description'),
+        };
+        if (!activity.title) return;
+
+        const messageContent = detail.assistantElement.querySelector('.message-content');
+        if (!messageContent) return;
+
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn btn-outline-primary btn-sm mt-2 schedule-activity-trigger';
+        button.innerHTML = '<i class="fas fa-calendar-plus me-1"></i>Save activity to schedule';
+        button.addEventListener('click', function() {
+            selectedActivity = activity;
+            activityName.textContent = activity.title;
+            selectUpcomingDay();
+            status.textContent = '';
+            confirmButton.disabled = false;
+            loadDefaultSlots()
+                .then(function() {
+                    confirmButton.disabled = !slotSelect.value;
+                    dialog.showModal();
+                })
+                .catch(function(error) {
+                    confirmButton.disabled = true;
+                    status.textContent = error.message;
+                    status.className = 'small mt-2 text-danger';
+                    dialog.showModal();
+                });
+        });
+        messageContent.appendChild(document.createElement('br'));
+        messageContent.appendChild(button);
+    });
+
+    document.getElementById('cancelScheduleActivity').addEventListener('click', function() {
+        dialog.close();
+    });
+
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        if (!selectedActivity) return;
+
+        confirmButton.disabled = true;
+        status.textContent = 'Saving activity...';
+        try {
+            const response = await fetch('{% url "sage:assign_chat_activity" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': form.querySelector('[name="csrfmiddlewaretoken"]').value,
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    entry_id: selectedActivity.entry_id,
+                    agent: selectedActivity.agent,
+                    day_of_week: Number(daySelect.value),
+                    schedule_slot_id: Number(slotSelect.value),
+                }),
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Could not save the activity.');
+            }
+            dialog.close();
+            const notice = document.createElement('div');
+            notice.className = 'small text-success mt-2';
+            notice.textContent = result.message;
+            selectedActivity = null;
+            document.getElementById('messageContainer').appendChild(notice);
+        } catch (error) {
+            status.className = 'small mt-2 text-danger';
+            status.textContent = error.message;
+        } finally {
+            confirmButton.disabled = false;
+        }
+    });
+});
+</script>

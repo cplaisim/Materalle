@@ -1,0 +1,168 @@
+<div class="row g-3">
+    <div class="col-12">
+        <section class="agent-participants-panel p-3" aria-labelledby="participantHeading">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <div>
+                    <h2 class="h5 mb-0" id="participantHeading"><i class="fas fa-child me-1"></i>Participants</h2>
+                    <span class="small text-muted" id="participantActivityStatus">{% if not current_activity_id %}Create an activity in chat to enable ratings.{% endif %}</span>
+                </div>
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'enroll:attendance' %}">Manage attendance</a>
+            </div>
+
+            <form class="d-none" aria-hidden="true">
+                {% csrf_token %}
+                <input type="hidden" id="participantPage" value="{{ page }}">
+                <input type="hidden" id="participantActivityId" value="{{ current_activity_id|default:'' }}">
+            </form>
+
+            {% if children_data %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-3">
+                {% for cd in children_data %}
+                <div class="col">
+                    <article class="card participant-row h-100" data-child-id="{{ cd.child.child_id }}">
+                        <div class="card-body d-flex flex-column gap-3">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div>
+                                <a href="{% url 'enroll:child_dashboard' child_id=cd.child.child_id %}" class="fw-semibold text-decoration-none">{{ cd.child.child_name }}</a>
+                                <div class="small text-muted">DOB: {{ cd.child.date_of_birth }}</div>
+                                </div>
+                                <span class="participant-status badge {% if cd.child.is_checked_in %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if cd.child.is_checked_in %}Present{% else %}Away{% endif %}
+                                </span>
+                            </div>
+                            <div>
+                                <button type="button" class="participant-checkin btn btn-sm {% if cd.child.is_checked_in %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                                        data-checked-in="{{ cd.child.is_checked_in|yesno:'true,false' }}"
+                                        data-check-in-url="{% url 'enroll:check_in_out' child_id=cd.child.child_id action='in' %}"
+                                        data-check-out-url="{% url 'enroll:check_in_out' child_id=cd.child.child_id action='out' %}">
+                                    {% if cd.child.is_checked_in %}Check out{% else %}Check in{% endif %}
+                                </button>
+                            </div>
+                            <div class="mt-auto d-flex justify-content-between align-items-center gap-2">
+                                <span class="small text-muted">Rate</span>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Rate for {{ cd.child.child_name }}">
+                                    <button type="button" class="participant-rate btn btn-outline-secondary" data-rating="dislike" aria-label="Disliked" title="Disliked" {% if not current_activity_id %}disabled{% endif %}>😞</button>
+                                    <button type="button" class="participant-rate btn btn-outline-secondary" data-rating="normal" aria-label="Okay" title="Okay" {% if not current_activity_id %}disabled{% endif %}>😐</button>
+                                    <button type="button" class="participant-rate btn btn-outline-secondary" data-rating="like" aria-label="Liked" title="Liked" {% if not current_activity_id %}disabled{% endif %}>😄</button>
+                                </div>
+                            </div>
+                            <span class="participant-feedback small text-end" aria-live="polite"></span>
+                        </div>
+                    </article>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-4 mb-0">No children enrolled yet.</p>
+            {% endif %}
+        </section>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var panel = document.querySelector('.agent-participants-panel');
+    if (!panel) return;
+
+    var page = document.getElementById('participantPage').value;
+    var activityInput = document.getElementById('participantActivityId');
+    var csrfInput = panel.querySelector('[name="csrfmiddlewaretoken"]');
+    var csrfToken = csrfInput ? csrfInput.value : '';
+
+    document.addEventListener('agentEntry', function(event) {
+        if (!event.detail || !event.detail.entry_id) return;
+        activityInput.value = event.detail.entry_id;
+        document.getElementById('participantActivityStatus').textContent = 'New activity ready to rate.';
+        panel.querySelectorAll('.participant-rate').forEach(function(button) {
+            button.disabled = false;
+        });
+    });
+
+    panel.querySelectorAll('.participant-checkin').forEach(function(button) {
+        button.addEventListener('click', function() {
+            var checkedIn = button.dataset.checkedIn === 'true';
+            var url = checkedIn ? button.dataset.checkOutUrl : button.dataset.checkInUrl;
+            button.disabled = true;
+            fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                if (!response.ok) throw new Error('Attendance update failed.');
+                return response.json();
+            })
+            .then(function(data) {
+                if (!data.success) throw new Error('Attendance update failed.');
+                checkedIn = !checkedIn;
+                button.dataset.checkedIn = checkedIn ? 'true' : 'false';
+                button.textContent = checkedIn ? 'Check out' : 'Check in';
+                button.classList.toggle('btn-outline-danger', checkedIn);
+                button.classList.toggle('btn-outline-success', !checkedIn);
+                var badge = button.closest('.participant-row').querySelector('.participant-status');
+                badge.textContent = checkedIn ? 'Present' : 'Away';
+                badge.classList.toggle('bg-success', checkedIn);
+                badge.classList.toggle('bg-secondary', !checkedIn);
+            })
+            .catch(function(error) {
+                window.alert(error.message);
+            })
+            .finally(function() {
+                button.disabled = false;
+            });
+        });
+    });
+
+    panel.querySelectorAll('.participant-rate').forEach(function(button) {
+        button.addEventListener('click', function() {
+            var childRow = button.closest('.participant-row');
+            var feedback = childRow.querySelector('.participant-feedback');
+            if (!activityInput.value) {
+                feedback.textContent = 'Create an activity in chat first.';
+                feedback.className = 'participant-feedback small ms-2 text-warning';
+                return;
+            }
+
+            var body = new URLSearchParams({
+                page: page,
+                child_id: childRow.dataset.childId,
+                rate_value: button.dataset.rating,
+                object_id: activityInput.value,
+                csrfmiddlewaretoken: csrfToken
+            });
+            button.disabled = true;
+            fetch('{% url "enroll:rate_student" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: body.toString(),
+                credentials: 'same-origin'
+            })
+            .then(function(response) {
+                if (!response.ok) throw new Error('Rating could not be saved.');
+                return response.json();
+            })
+            .then(function(data) {
+                if (data.status !== 'success') throw new Error(data.message || 'Rating could not be saved.');
+                childRow.querySelectorAll('.participant-rate').forEach(function(item) {
+                    item.classList.remove('active', 'btn-primary');
+                    item.classList.add('btn-outline-secondary');
+                });
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('active', 'btn-primary');
+                feedback.textContent = 'Saved';
+                feedback.className = 'participant-feedback small ms-2 text-success';
+            })
+            .catch(function(error) {
+                feedback.textContent = error.message;
+                feedback.className = 'participant-feedback small ms-2 text-danger';
+            })
+            .finally(function() {
+                button.disabled = false;
+            });
+        });
+    });
+});
+</script>

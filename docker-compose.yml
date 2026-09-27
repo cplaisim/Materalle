@@ -44,6 +44,17 @@ services:
       timeout: 5s
       retries: 5
 
+  ollama-model-init:
+    image: ollama/ollama:latest
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ollama pull \"$$OLLAMA_MODEL\""]
+    environment:
+      OLLAMA_HOST: http://ollama:12434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
+    depends_on:
+      ollama:
+        condition: service_healthy
+
   backend:
     build:
       context: .
@@ -72,8 +83,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      ollama:
-        condition: service_started
+      ollama-model-init:
+        condition: service_completed_successfully
 
   worker:
     build:
@@ -106,8 +117,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      ollama:
-        condition: service_started
+      ollama-model-init:
+        condition: service_completed_successfully
 
 volumes:
   db_data:
