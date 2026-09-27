@@ -61,7 +61,7 @@ services:
       dockerfile: Dockerfile
     container_name: materalle_backend
     restart: unless-stopped
-    command: gunicorn materalleapp.wsgi:application --bind 0.0.0.0:8000 --workers 2 --reload --timeout 120
+    command: gunicorn materalleapp.wsgi:application --bind 0.0.0.0:8000 --workers 2 --reload --timeout 300
     env_file:
       - .env
     environment:
@@ -72,6 +72,7 @@ services:
       DJANGO_ALLOWED_HOSTS: "*"
       OLLAMA_BASE_URL: http://ollama:12434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
+      LLM_TIMEOUT_SECONDS: 300
     volumes:
       - .:/app
       - ./staticfiles:/app/staticfiles

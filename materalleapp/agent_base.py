@@ -1,9 +1,10 @@
 import anthropic
 import httpx
+import os
 from django.conf import settings
 from abc import ABC, abstractmethod
 
-LLM_TIMEOUT_SECONDS = 60.0
+LLM_TIMEOUT_SECONDS = float(os.environ.get("LLM_TIMEOUT_SECONDS", "180.0"))
 LLM_UNAVAILABLE_WARNING = "**Warning:** The LLM is not responding right now. This is a prewritten fallback response."
 
 AGENT_FALLBACK_CATALOG = {
@@ -218,14 +219,21 @@ def _get_ollama_response(messages: list, system_prompt: str = None, model: str =
     }
     base_url = get_ollama_base_url()
     url = f"{base_url}/api/chat"
-    print(f"[Ollama] Connecting to {url} with model {payload['model']}")
+    print(f"[Ollama] Connecting to {url} with model {payload['model']}, timeout={LLM_TIMEOUT_SECONDS}s")
     try:
+        timeout = httpx.Timeout(
+            timeout=LLM_TIMEOUT_SECONDS,
+            connect=10.0,
+            read=LLM_TIMEOUT_SECONDS,
+            write=10.0,
+            pool=10.0,
+        )
         response = httpx.post(
             url,
             json=payload,
-            timeout=LLM_TIMEOUT_SECONDS,
+            timeout=timeout,
         )
-        print(f"[Ollama] Response status: {response.status_code}")
+        print(f"[Ollama] Response status: {response.status_code}, time={response.elapsed.total_seconds():.2f}s")
         response.raise_for_status()
         data = response.json()
         return data["message"]["content"]
