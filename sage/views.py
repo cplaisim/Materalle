@@ -6,6 +6,7 @@ from django.views.decorators.http import require_http_methods
 from django.utils import timezone
 from django.template import loader
 from django.views import View
+from django.conf import settings
 from .forms import DishForm, GroceryItemForm
 from .models import Dish, Menu, Meal, MealAttendance, GroceryItem, Schedule, Document, Attendance, WeeklyPlanEntry
 
