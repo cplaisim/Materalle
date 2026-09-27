@@ -1,0 +1,85 @@
+{% extends 'patience/base_patience.html' %}
+{% load static %}
+
+{% block patience_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent Physical Activities</h5>
+            </div>
+            <div class="card-body">
+                {% for activity in activities %}
+                <div class="activity-card mb-3">
+                    <h6>{{ activity.title }}</h6>
+                    <p class="small text-muted">{{ activity.get_activity_type_display }} | Rating: {{ activity.average_rating }}/5</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <p class="mb-0">Equipment: {{ activity.equipment_needed|truncatewords:5 }}</p>
+                        <a href="{% url 'patience:activity_detail' activity.id %}" class="btn btn-sm btn-primary">View Details</a>
+                    </div>
+                </div>
+                {% empty %}
+                <p>No activities recorded yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Progress Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for progress in recent_progress %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6>{{ progress.child.first_name }}</h6>
+                                <p class="small text-muted">{{ progress.activity.title }}</p>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" 
+                                         
+                                         aria-valuenow="{{ progress.difficulty_level }}" 
+                                         aria-valuemin="0" aria-valuemax="5">
+                                        Level {{ progress.difficulty_level }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Checked-in Children</h5>
+            </div>
+            <div class="card-body">
+                {% for child in checked_in_children %}
+                <div class="child-card mb-2">
+                    <img src="{{ child.profile_picture.url }}" class="rounded-circle" width="40" height="40">
+                    <span class="ms-2">{{ child.first_name }} {{ child.last_name }}</span>
+                </div>
+                {% empty %}
+                <p>No children checked in.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'patience:suggest_activity' %}" class="btn btn-primary mb-2 w-100">Get Activity Suggestion</a>
+                <a href="{% url 'patience:record_activity' %}" class="btn btn-success mb-2 w-100">Record New Activity</a>
+                <!-- Remove or update this button since progress recording requires an activity_id -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

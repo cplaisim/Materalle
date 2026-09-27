@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col h-screen">
+        
+        <!-- Message Input -->
+        <form id="message-form" class="flex gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="conversation_id" value="{{ conversation.id }}">
+            <input type="text" name="message" class="flex-grow p-2 border rounded" placeholder="Type your message...">
+            <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded">Send</button>
+        </form>
+    </div>
+</div>
+    <!-- Conversation History -->
+    <div class="flex-grow overflow-y-auto mb-4 p-4 bg-gray-50 rounded-lg" id="message-container">
+        {% for message in messages %}
+            <div class="mb-4 {% if message.is_user %}text-right{% endif %}">
+                <div class="inline-block p-3 rounded-lg {% if message.is_user %}bg-blue-100{% else %}bg-white border{% endif %}">
+                    {{ message.content }}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+<script>
+document.getElementById('message-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('{% url "agent:send_message" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Update conversation ID if this is a new conversation
+            const conversationIdInput = form.querySelector('[name="conversation_id"]');
+            if (!conversationIdInput.value) {
+                conversationIdInput.value = data.conversation_id;
+            }
+            
+            // Add messages to the container
+            const container = document.getElementById('message-container');
+            
+            // Add user message
+            container.innerHTML += `
+                <div class="mb-4 text-right">
+                    <div class="inline-block p-3 rounded-lg bg-blue-100">
+                        ${formData.get('message')}
+                    </div>
+                </div>
+            `;
+            
+            // Add Claude's response
+            container.innerHTML += `
+                <div class="mb-4">
+                    <div class="inline-block p-3 rounded-lg bg-white border">
+                        ${data.message}
+                    </div>
+                </div>
+            `;
+            
+            // Clear input
+            form.querySelector('[name="message"]').value = '';
+            
+            // Scroll to bottom
+            container.scrollTop = container.scrollHeight;
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error sending message: ' + error);
+    }
+});
+</script>
+{% endblock %}

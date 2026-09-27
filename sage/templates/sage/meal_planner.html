@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <!-- Meal Type Toggle Buttons and Action Buttons -->
+    <div class="mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <button type="button" class="btn btn-primary" onclick="generateAttendance()">Generate Attendance</button>
+            <button type="button" class="btn btn-primary" onclick="sendReport()">Send Report</button>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <h2 class="mb-4">CACFP Menu Planning</h2>
+        
+        <form method="post" action="{% url 'sage:generate_menu' %}" class="menu-planning-form">
+            {% csrf_token %}
+            
+            <!-- Provider Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4>Provider Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="provider_name" class="form-label">Provider's Name:</label>
+                            <input type="text" class="form-control" id="provider_name" name="provider_name" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="provider_address" class="form-label">Address:</label>
+                            <input type="text" class="form-control" id="provider_address" name="provider_address" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="menu_month" class="form-label">Month:</label>
+                            <input type="text" class="form-control" id="menu_month" name="menu_month" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="menu_year" class="form-label">Year:</label>
+                            <input type="text" class="form-control" id="menu_year" name="menu_year" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <section>
+                <h2 class="mt-5">Add a New Dish</h2>
+                <form method="POST" action="{% url 'sage:index' %}" enctype="multipart/form-data" id="dishForm">
+                  {% csrf_token %}
+                  {{ form.non_field_errors }}
+                  <div class="card mb-3">
+                    <div class="card-body">
+                      <div class="form-group">
+                        {{ form.dish_picture.label_tag }}
+                        {{ form.dish_picture }}
+                        {{ form.dish_picture.errors }}
+                      </div>
+          
+                      <div class="form-group">
+                        {{ form.vegetable.label_tag }}
+                        {{ form.vegetable }}
+                        {{ form.vegetable.errors }}
+                      </div>
+          
+                      <div class="form-group">
+                        {{ form.fruit.label_tag }}
+                        {{ form.fruit }}
+                        {{ form.fruit.errors }}
+                      </div>
+          
+                      <div class="form-group">
+                        {{ form.grain.label_tag }}
+                        {{ form.grain }}
+                        {{ form.grain.errors }}
+                      </div>
+          
+                      <div class="form-group">
+                        {{ form.protein.label_tag }}
+                        {{ form.protein }}
+                        {{ form.protein.errors }}
+                      </div>
+          
+                      <div class="form-group">
+                        {{ form.drink.label_tag }}
+                        {{ form.drink }}
+                        {{ form.drink.errors }}
+                      </div>
+          
+                      <div class="form-group">
+                        {{ form.rating.label_tag }}
+                        {{ form.rating }}
+                        {{ form.rating.errors }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                  </div>
+                </form>
+              </section>
+          
+            <!-- Available Ingredients -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h4>Available Ingredients</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <ul class="list-group">
+                                {% for item in available_ingredients %}
+                                <li class="list-group-item">
+                                    <input type="checkbox" name="ingredients" value="{{ item }}" {% if item in checked_items %}checked{% endif %}>
+                                    {{ item }}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Generate Menu</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

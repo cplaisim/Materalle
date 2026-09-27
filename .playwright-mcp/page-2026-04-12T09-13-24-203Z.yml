@@ -1,0 +1,45 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Happy Caterpillars" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - list [ref=e4]:
+      - listitem [ref=e5]:
+        - link "Register" [ref=e6] [cursor=pointer]:
+          - /url: /register/
+      - listitem [ref=e7]:
+        - link "Login" [ref=e8] [cursor=pointer]:
+          - /url: /login/
+  - generic [ref=e9]:
+    - banner [ref=e10]:
+      - heading "Chat with Sage" [level=1] [ref=e11]
+    - generic [ref=e12]:
+      - generic [ref=e14]:
+        - heading "Sage" [level=5] [ref=e15]
+        - paragraph [ref=e16]: Administration, meals, schedules & reports
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: Sage
+          - generic [ref=e20]:
+            - link "Grocery" [ref=e21] [cursor=pointer]:
+              - /url: /sage/grocery/
+            - link "Schedule" [ref=e22] [cursor=pointer]:
+              - /url: /sage/schedule/
+            - link "Docs" [ref=e23] [cursor=pointer]:
+              - /url: /sage/documents/
+            - link "Dashboard" [ref=e24] [cursor=pointer]:
+              - /url: /sage/activity-dashboard/
+        - generic [ref=e26]:
+          - generic [ref=e27]: S
+          - paragraph [ref=e29]: Hello! I'm Sage, your administration and holistic monitoring assistant. I can help with attendance, meals, schedules, and reports.
+        - generic [ref=e30]:
+          - textbox "Ask Sage something…" [ref=e31]
+          - button "Send" [disabled] [ref=e32]
+    - generic [ref=e33]:
+      - generic [ref=e34]:
+        - heading "Active Participant" [level=6] [ref=e35]
+        - generic [ref=e36]:
+          - generic [ref=e37]: 0 / 0
+          - button "‹" [disabled] [ref=e38]
+          - button "›" [disabled] [ref=e39]
+      - paragraph [ref=e40]: No children enrolled yet.
+  - alert [ref=e41]

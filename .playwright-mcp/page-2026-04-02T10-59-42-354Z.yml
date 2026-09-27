@@ -1,0 +1,5 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - heading "Forbidden (403)" [level=1] [ref=e3]
+    - paragraph [ref=e4]: CSRF verification failed. Request aborted.
+  - paragraph [ref=e6]: More information is available with DEBUG=True.

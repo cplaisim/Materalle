@@ -1,0 +1,79 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Happy Caterpillars" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - list [ref=e45]:
+      - listitem [ref=e46]:
+        - link "Dashboard" [ref=e47] [cursor=pointer]:
+          - /url: /dashboard/
+      - listitem [ref=e48]:
+        - link "Grace" [ref=e49] [cursor=pointer]:
+          - /url: /grace/
+      - listitem [ref=e50]:
+        - link "Patience" [ref=e51] [cursor=pointer]:
+          - /url: /patience/
+      - listitem [ref=e52]:
+        - button "Sage ▾" [ref=e53] [cursor=pointer]
+    - generic [ref=e54]:
+      - generic [ref=e55]: Apr 6 – Apr 10
+      - generic "LLM backend (stored locally)" [ref=e56]:
+        - generic [ref=e57]: Ollama
+        - checkbox [checked] [ref=e59] [cursor=pointer]
+      - button "Signed in as testadmin ▾" [ref=e62] [cursor=pointer]:
+        - text: Signed in as
+        - strong [ref=e63]: testadmin
+        - text: ▾
+  - generic [ref=e9]:
+    - banner [ref=e10]:
+      - heading "Chat with Grace" [level=1] [ref=e11]
+    - generic [ref=e12]:
+      - generic [ref=e14]:
+        - heading "Grace" [level=5] [ref=e15]
+        - paragraph [ref=e16]: Social-emotional development, reading & music
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: Grace
+          - generic [ref=e20]:
+            - button "Emotional Awareness" [ref=e21] [cursor=pointer]: ♥ Emotional Awareness
+            - button "Sharing" [ref=e22] [cursor=pointer]: 🤝 Sharing
+            - button "Empathy" [ref=e23] [cursor=pointer]: 💛 Empathy
+            - button "Conflict Resolution" [ref=e24] [cursor=pointer]: ⚖ Conflict Resolution
+            - button "Self-Regulation" [ref=e25] [cursor=pointer]: 🧠 Self-Regulation
+            - button "Social Play" [ref=e26] [cursor=pointer]: 👥 Social Play
+            - button "Communication" [ref=e27] [cursor=pointer]: 💬 Communication
+        - generic [ref=e28]:
+          - generic [ref=e29]:
+            - generic [ref=e30]: G
+            - paragraph [ref=e32]: Hello! I'm Grace, your social-emotional development guide. How can I help with reading, music, emotional skills, or language today?
+          - generic [ref=e84]: Suggest an Emotional Awareness activity for young children.
+          - generic [ref=e85]: Sorry, there was an error. Please try again.
+        - generic [ref=e33]:
+          - textbox "Type your message…" [ref=e34]
+          - button "Send" [disabled] [ref=e35]
+    - generic [ref=e36]:
+      - generic [ref=e37]:
+        - heading "Active Participant" [level=6] [ref=e38]
+        - generic [ref=e39]:
+          - generic [ref=e40]: 1 / 2
+          - button "‹" [ref=e41] [cursor=pointer]
+          - button "›" [ref=e42] [cursor=pointer]
+      - generic [ref=e64]:
+        - generic [ref=e65]:
+          - generic [ref=e66]:
+            - heading "chuck" [level=5] [ref=e67]
+            - paragraph [ref=e68]: "DOB: 2021-10-20"
+          - generic [ref=e69]: Present
+        - generic [ref=e70]:
+          - generic [ref=e71]:
+            - generic [ref=e72]: "1"
+            - generic [ref=e73]: Liked
+          - generic [ref=e74]:
+            - generic [ref=e75]: "0"
+            - generic [ref=e76]: Okay
+          - generic [ref=e77]:
+            - generic [ref=e78]: "0"
+            - generic [ref=e79]: Disliked
+          - generic [ref=e80]:
+            - generic [ref=e81]: "1"
+            - generic [ref=e82]: Total
+  - alert [ref=e44]

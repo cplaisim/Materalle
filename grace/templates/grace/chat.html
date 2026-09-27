@@ -1,0 +1,251 @@
+{% load static %}
+<div class="grace-chat d-flex flex-column h-100 p-0">
+    <div class="chat-header p-3 rounded-top">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <span class="fw-bold">Grace</span>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-light btn-sm quick-action-btn" id="btn-emotional"><i class="fas fa-heart me-1"></i>Emotional Awareness</button>
+                <button type="button" class="btn btn-light btn-sm quick-action-btn" id="btn-sharing"><i class="fas fa-hands-helping me-1"></i>Sharing</button>
+                <button type="button" class="btn btn-light btn-sm quick-action-btn" id="btn-empathy"><i class="fas fa-hand-holding-heart me-1"></i>Empathy</button>
+                <button type="button" class="btn btn-light btn-sm quick-action-btn" id="btn-conflict"><i class="fas fa-handshake me-1"></i>Conflict Resolution</button>
+                <button type="button" class="btn btn-light btn-sm quick-action-btn" id="btn-self-reg"><i class="fas fa-brain me-1"></i>Self-Regulation</button>
+                <button type="button" class="btn btn-light btn-sm quick-action-btn" id="btn-social-play"><i class="fas fa-users me-1"></i>Social Play</button>
+                <button type="button" class="btn btn-light btn-sm quick-action-btn" id="btn-communication"><i class="fas fa-comment-dots me-1"></i>Communication</button>
+            </div>
+        </div>
+    </div>
+    <div id="llmProgressBar" class="d-none px-3 pt-2">
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+            <small class="text-muted">Thinking with <strong id="llmModelLabel"></strong>...</small>
+        </div>
+        <div class="progress" style="height: 4px;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+        </div>
+    </div>
+    <div class="chat-messages flex-grow-1 overflow-auto p-3" id="messageContainer">
+        <div class="message assistant-message mb-2">
+            <div class="d-flex align-items-start">
+                <img src="{% static 'images/grace.jpg' %}" alt="Grace" class="rounded-circle me-2" style="width: 28px; height: 28px; object-fit: cover;">
+                <div class="message-content p-2 rounded">Hello! I'm Grace, your social-emotional development guide. How can I help with reading, music, emotional skills, or language today?</div>
+            </div>
+        </div>
+    </div>
+    <div class="p-3 border-top bg-white">
+        <form id="graceChatForm" class="d-flex gap-2">
+            {% csrf_token %}
+            <input type="hidden" name="conversation_id" id="conversationId" value="{% if conversation %}{{ conversation.id }}{% endif %}">
+            <input type="text" name="message" class="form-control form-control-sm" placeholder="Type your message..." required>
+            <button type="submit" class="btn btn-primary btn-sm px-3"><i class="fas fa-paper-plane"></i></button>
+        </form>
+    </div>
+</div>
+
+<script>
+(function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        var form = document.getElementById('graceChatForm');
+        var messageContainer = document.getElementById('messageContainer');
+        var input = form.querySelector('[name="message"]');
+        var conversationIdInput = document.getElementById('conversationId');
+
+        var quickActions = {
+            'btn-emotional': 'Suggest an Emotional Awareness activity for young children.',
+            'btn-sharing': 'Suggest a Sharing & Turn-Taking activity for young children.',
+            'btn-empathy': 'Suggest an Empathy Building activity for young children.',
+            'btn-conflict': 'Suggest a Conflict Resolution activity for young children.',
+            'btn-self-reg': 'Suggest a Self-Regulation activity for young children.',
+            'btn-social-play': 'Suggest a Social Play activity for young children.',
+            'btn-communication': 'Suggest a Communication Skills activity for young children.'
+        };
+        Object.keys(quickActions).forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('click', function() { input.value = quickActions[id]; });
+        });
+
+        // Get the active child from the participant carousel
+        function getActiveChild() {
+            var activeSlide = document.querySelector('.child-slide:not(.d-none)');
+            if (!activeSlide) return null;
+            var childId = activeSlide.querySelector('.child-id');
+            var nameEl = activeSlide.querySelector('h5 a, h6 a');
+            return {
+                id: childId ? childId.value : null,
+                name: nameEl ? nameEl.textContent.trim() : 'child'
+            };
+        }
+
+        function formatResponse(text, entryId) {
+            var fieldPattern = /\*\*(\w[\w\s&\-]*?):\*\*\s*([\s\S]*?)(?=\n\*\*|\s*$)/g;
+            var matches = [];
+            var match;
+            while ((match = fieldPattern.exec(text)) !== null) {
+                matches.push({ label: match[1].trim(), value: match[2].trim() });
+            }
+            if (matches.length < 2) {
+                return '<p>' + text.replace(/\n/g, '<br>') + '</p>';
+            }
+            var titleText = '';
+            var title = '';
+            var rows = [];
+            matches.forEach(function(m) {
+                if (m.label === 'Title') {
+                    titleText = m.value;
+                    title = '<h6 class="mb-2 fw-bold">' + m.value + '</h6>';
+                } else {
+                    rows.push(
+                        '<tr><td class="fw-semibold text-nowrap align-top pe-3" style="width:140px;color:#666;">' +
+                        m.label + '</td><td>' + m.value.replace(/\n/g, '<br>') + '</td></tr>'
+                    );
+                }
+            });
+
+            // Rate for child button instead of schedule button
+            var rateSection = '';
+            if (entryId) {
+                var child = getActiveChild();
+                var childName = child ? child.name : '';
+                rateSection = '<div class="chat-rate-section mt-2 d-flex align-items-center gap-2" data-entry-id="' + entryId + '">' +
+                    '<span class="text-muted" style="font-size:0.75rem;">Rate for <strong class="rate-child-name">' + childName + '</strong>:</span>' +
+                    '<div class="btn-group btn-group-sm">' +
+                    '<button type="button" class="btn btn-outline-secondary chat-rate-btn" data-rating="1" title="Not great">😞</button>' +
+                    '<button type="button" class="btn btn-outline-secondary chat-rate-btn" data-rating="2" title="Okay">😐</button>' +
+                    '<button type="button" class="btn btn-outline-secondary chat-rate-btn" data-rating="3" title="Great">😄</button>' +
+                    '</div></div>';
+            }
+
+            return title +
+                '<table class="table table-sm table-borderless mb-0" style="font-size:0.9rem;">' +
+                '<tbody>' + rows.join('') + '</tbody></table>' + rateSection;
+        }
+
+        var progressBar = document.getElementById('llmProgressBar');
+        var modelLabel = document.getElementById('llmModelLabel');
+
+        function showProgress() {
+            fetch('{% url "website:toggle_llm" %}')
+                .then(function(r) { return r.json(); })
+                .then(function(data) { modelLabel.textContent = data.model || data.backend; })
+                .catch(function() { modelLabel.textContent = 'AI'; });
+            progressBar.classList.remove('d-none');
+        }
+        function hideProgress() { progressBar.classList.add('d-none'); }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var message = input.value.trim();
+            if (!message) return;
+
+            var userDiv = document.createElement('div');
+            userDiv.className = 'message user-message mb-2';
+            userDiv.innerHTML = '<div class="message-content p-2 rounded">' + message + '</div>';
+            messageContainer.appendChild(userDiv);
+            input.value = '';
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+            showProgress();
+
+            var formData = new FormData(form);
+            formData.set('message', message);
+
+            fetch('{% url "grace:send_message" %}', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                hideProgress();
+                if (data.conversation_id) {
+                    conversationIdInput.value = data.conversation_id;
+                }
+                var formatted = formatResponse(data.message || '', data.entry_id);
+                var assistantDiv = document.createElement('div');
+                assistantDiv.className = 'message assistant-message mb-2';
+                assistantDiv.innerHTML = '<div class="d-flex align-items-start"><img src="{% static "images/grace.jpg" %}" alt="Grace" class="rounded-circle me-2" style="width:28px;height:28px;object-fit:cover;"><div class="message-content p-2 rounded">' + formatted + '</div></div>';
+                messageContainer.appendChild(assistantDiv);
+                messageContainer.scrollTop = messageContainer.scrollHeight;
+                if (data.entry_id) {
+                    document.dispatchEvent(new CustomEvent('agentEntry', { detail: { entry_id: data.entry_id } }));
+                }
+            })
+            .catch(function(err) {
+                hideProgress();
+                console.error(err);
+                var errDiv = document.createElement('div');
+                errDiv.className = 'message mb-2 small text-danger';
+                errDiv.textContent = 'Sorry, there was an error. Please try again.';
+                messageContainer.appendChild(errDiv);
+                messageContainer.scrollTop = messageContainer.scrollHeight;
+            });
+        });
+
+        // Handle inline rate button clicks in chat responses
+        messageContainer.addEventListener('click', function(e) {
+            var btn = e.target.closest('.chat-rate-btn');
+            if (!btn) return;
+
+            var rateSection = btn.closest('.chat-rate-section');
+            var entryId = rateSection.getAttribute('data-entry-id');
+            var child = getActiveChild();
+
+            if (!child || !child.id) {
+                alert('No active child displayed. Check in a child first.');
+                return;
+            }
+
+            var rateValue = btn.getAttribute('data-rating');
+            var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            fetch('{% url "enroll:rate_student" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-CSRFToken': csrfToken },
+                body: 'page=grace&child_id=' + child.id + '&rate_value=' + rateValue + '&object_id=' + entryId + '&csrfmiddlewaretoken=' + csrfToken
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.status === 'success') {
+                    rateSection.querySelectorAll('.chat-rate-btn').forEach(function(b) {
+                        b.classList.remove('active', 'btn-primary');
+                        b.classList.add('btn-outline-secondary');
+                    });
+                    btn.classList.remove('btn-outline-secondary');
+                    btn.classList.add('active', 'btn-primary');
+                    var nameEl = rateSection.querySelector('.rate-child-name');
+                    if (nameEl) nameEl.innerHTML = child.name + ' <i class="fas fa-check text-success"></i>';
+                    // Update the active participant card stats
+                    var activeSlide = document.querySelector('.child-slide:not(.d-none)');
+                    if (activeSlide) {
+                        var statMap = {'3': 'likes', '2': 'normals', '1': 'dislikes'};
+                        var statKey = statMap[rateValue];
+                        if (statKey) {
+                            var el = activeSlide.querySelector('[data-stat="' + statKey + '"]');
+                            if (el) el.textContent = parseInt(el.textContent) + 1;
+                        }
+                        var totalEl = activeSlide.querySelector('[data-stat="total"]');
+                        if (totalEl) totalEl.textContent = parseInt(totalEl.textContent) + 1;
+                    }
+                } else {
+                    alert('Error: ' + (data.message || 'Rating failed'));
+                }
+            })
+            .catch(function(err) { alert('Error: ' + err.message); });
+        });
+
+        // When the active child changes, update all visible rate labels
+        var observer = new MutationObserver(function() {
+            var child = getActiveChild();
+            if (child) {
+                document.querySelectorAll('.rate-child-name').forEach(function(el) {
+                    if (!el.querySelector('.fa-check')) {
+                        el.textContent = child.name;
+                    }
+                });
+            }
+        });
+        var carousel = document.getElementById('childCarousel');
+        if (carousel) {
+            observer.observe(carousel, { attributes: true, subtree: true, attributeFilter: ['class'] });
+        }
+    });
+})();
+</script>

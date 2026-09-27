@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block content %} 
+<style>
+    .card {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .assistant-info {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px;
+        opacity: 1;
+    }
+
+
+</style>
+{% if user.is_authenticated %}
+    <h1>Welcome back, {{ user.username }}!</h1>
+    <h3>How can we help you today?</h3>
+
+    <div class="button-container" style="display: flex;">
+
+        <div class="card" style="background-image: url('/static/images/grace.jpg'); background-size: cover; flex: 1; margin: 5px; height: 500px;">
+             <a href="/grace" ">GRACE</a>
+            
+            <div class="assistant-info">
+                <p>Role: Social-emotional learning guide</p>
+                <ul>
+                    <li>Gentle communication style</li>
+                    <li>Emotional intelligence</li>
+                    <li>Positive reinforcement</li>
+                    <li>Adaptive responses to frustration</li>
+                </ul>
+            </div>
+
+        </div>
+        <div class="card" style="background-image: url('/static/images/patience.jpg');background-size: cover;flex: 1; margin: 5px; height: 500px;">
+            <a href="/patience" style="display: block;">PATIENCE</a>
+            <div class="assistant-info">
+                <p>Role: Learning pace moderator</p>
+                <ul>
+                    <li>Personalized learning rhythms</li>
+                    <li>Progress tracking</li>
+                    <li>Stress detection</li>
+                    <li>Break time optimization</li>
+                </ul>
+            </div>
+        </div>
+        <div class="card" style="background-image: url('/static/images/sage.jpg'); background-size: cover; flex: 1; margin: 5px; height: 500px; ">
+            <a href="/sage" style="display: block;">SAGE</a>
+            <div class="assistant-info">
+                <p>Role: Knowledge and wisdom curator</p>
+                <ul>
+                    <li>Age-appropriate content selection</li>
+                    <li>Learning path optimization</li>
+                    <li>Pattern recognition</li>
+                    <li>Developmental milestone tracking</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <br/>
+    {% else %}
+
+    <h2>Welcome to Happy Caterpillars your child's home away from home.</h2>
+        <h3>Please  <a href="{% url 'website:login' %}">log in</a> to use the help of our agents Grace, Patience or Sage in helping provide a holistic experience to your child.
+        </h3>
+<div class="button-container" style="display: flex; justify-content: space-around; width: 100%;">
+    <div class="card" style="background-image: url('/static/images/grace.jpg'); background-size: cover; flex: 1; margin: 5px; height: 500px; transition: opacity 0.3s ease;">
+        <a href="/grace" style="display: block;">GRACE</a>
+        <div class="assistant-info">
+            <p>Role: Social-emotional learning guide</p>
+            <ul>
+                <li>Gentle communication style</li>
+                <li>Emotional intelligence</li>
+                <li>Positive reinforcement</li>
+                <li>Adaptive responses to frustration</li>
+            </ul>
+        </div>
+    </div>
+    <div class="card" style="background-image: url('/static/images/patience.jpg'); background-size: cover; flex: 1; margin: 5px; height: 500px; transition: opacity 0.3s ease;">
+        <a href="/patience" style="display: block;">PATIENCE</a>
+        <div class="assistant-info">
+            <p>Role: Learning pace moderator</p>
+            <ul>
+                <li>Personalized learning rhythms</li>
+                <li>Progress tracking</li>
+                <li>Stress detection</li>
+                <li>Break time optimization</li>
+            </ul>
+        </div>
+    </div>
+    <div class="card" style="background-image: url('/static/images/sage.jpg'); background-size: cover; flex: 1; margin: 5px; height: 500px; transition: opacity 0.3s ease;">
+        <a href="/sage" style="display: block;">SAGE</a>
+        <div class="assistant-info">
+            <p>Role: Knowledge and wisdom curator</p>
+            <ul>
+                <li>Age-appropriate content selection</li>
+                <li>Learning path optimization</li>
+                <li>Pattern recognition</li>
+                <li>Developmental milestone tracking</li>
+            </ul>
+        </div>
+    </div>
+</div>
+  
+{% endif %}
+{% endblock %}

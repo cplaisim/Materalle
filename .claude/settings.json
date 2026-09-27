@@ -1,0 +1,44 @@
+{
+  "mcpServers": {
+
+    "ui-ux-design": {
+      "type": "url",
+      "url": "https://mcp.21st.dev/sse",
+      "name": "21st-dev-magic-mcp",
+      "description": "Frontend UI/UX — Browse and use beautiful, production-ready UI components from the 21st.dev marketplace. Provides shadcn/ui, Radix, and Tailwind components with live previews, copy-paste code, and design system tokens.",
+      "usage": "Use for scaffolding UI components, finding design patterns, and generating accessible, responsive frontend code."
+    },
+
+    "github": {
+      "type": "url",
+      "url": "https://mcp.github.com/sse",
+      "name": "github-mcp-server",
+      "description": "GitHub — Full repository management: create/manage repos, branches, PRs, issues, code search, file operations, and GitHub Actions workflows.",
+      "usage": "Use for all Git operations: creating branches, opening PRs, reviewing code, managing issues, searching repos, and triggering CI/CD workflows."
+    },
+
+    "docker": {
+      "type": "url",
+      "url": "https://mcp.docker.com/sse",
+      "name": "docker-mcp-server",
+      "description": "Docker — Manage containers, images, volumes, networks, and Docker Compose stacks.",
+      "usage": "Use for all container operations: building images, running docker-compose, inspecting containers, viewing logs, managing volumes."
+    },
+
+    "aws": {
+      "type": "url",
+      "url": "https://mcp.aws.amazon.com/sse",
+      "name": "aws-mcp-server",
+      "description": "AWS — Interact with AWS services including S3, ECS, RDS, CloudFront, IAM, CloudWatch, Lambda, and Secrets Manager.",
+      "usage": "Use for all AWS operations: provisioning infrastructure, deploying services, checking CloudWatch logs/metrics, managing IAM roles."
+    },
+
+    "postgres": {
+      "type": "url",
+      "url": "https://mcp.neon.tech/sse",
+      "name": "neon-postgres-mcp",
+      "description": "PostgreSQL (via Neon) — Full database administration: execute SQL queries, manage schemas, run migrations, inspect tables, analyze query performance.",
+      "usage": "Use for all database operations: running queries, creating/altering tables, checking indexes, analyzing slow queries with EXPLAIN."
+    }
+  }
+}

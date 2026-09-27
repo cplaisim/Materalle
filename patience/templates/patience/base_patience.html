@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-4">Patience - Physical Development</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="list-group">
+            <a href="{% url 'patience:patience_dashboard' %}" class="list-group-item list-group-item-action">Dashboard</a>
+            <a href="{% url 'patience:patience_activities' %}" class="list-group-item list-group-item-action">Activities</a>
+            <a href="{% url 'patience:suggest_activity' %}" class="list-group-item list-group-item-action">Get Suggestions</a>
+            <a href="{% url 'patience:progress_tracker' %}" class="list-group-item list-group-item-action">Progress Tracker</a>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        {% block patience_content %}
+        {% endblock %}
+    </div>
+</div>
+{% endblock %} 

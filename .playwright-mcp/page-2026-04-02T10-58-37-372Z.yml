@@ -1,0 +1,72 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Happy Caterpillars" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - list [ref=e5]:
+      - listitem [ref=e6]:
+        - link "Register" [ref=e7] [cursor=pointer]:
+          - /url: /register/
+      - listitem [ref=e8]:
+        - link "Login" [ref=e9] [cursor=pointer]:
+          - /url: /login/
+  - generic [ref=e10]:
+    - generic [ref=e11]:
+      - heading "Welcome to Happy Caterpillars" [level=1] [ref=e12]
+      - paragraph [ref=e13]: Your child's home away from home with AI-assisted care.
+      - paragraph [ref=e14]:
+        - text: Please
+        - link "Login" [ref=e15] [cursor=pointer]:
+          - /url: /login/
+        - text: or
+        - link "Register" [ref=e16] [cursor=pointer]:
+          - /url: /register/
+        - text: to access our three specialized AI assistants.
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - generic [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: GRACE
+          - generic [ref=e22]:
+            - heading "Social-Emotional Learning Guide" [level=3] [ref=e23]
+            - list [ref=e24]:
+              - listitem [ref=e25]: Reading, music, and language development
+              - listitem [ref=e26]: Emotional intelligence activities
+              - listitem [ref=e27]: Communication skill building
+              - listitem [ref=e28]: Social development tracking
+        - generic [ref=e30] [cursor=pointer]:
+          - generic [ref=e31]: PATIENCE
+          - generic [ref=e32]:
+            - heading "Physical Development Guide" [level=3] [ref=e33]
+            - list [ref=e34]:
+              - listitem [ref=e35]: Age-appropriate motor activities
+              - listitem [ref=e36]: Physical milestone tracking
+              - listitem [ref=e37]: Coordination and balance exercises
+              - listitem [ref=e38]: Movement and play suggestions
+        - generic [ref=e40] [cursor=pointer]:
+          - generic [ref=e41]: SAGE
+          - generic [ref=e42]:
+            - heading "Health & Wellness Guide" [level=3] [ref=e43]
+            - list [ref=e44]:
+              - listitem [ref=e45]: Meal planning & nutrition
+              - listitem [ref=e46]: Health check reminders
+              - listitem [ref=e47]: Sleep schedule assistance
+              - listitem [ref=e48]: Developmental milestone tracking
+      - generic [ref=e52]:
+        - heading "Why Choose Happy Caterpillars?" [level=4] [ref=e53]
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - heading " Intellectual Development" [level=5] [ref=e56]:
+              - generic [ref=e57]: 
+              - text: Intellectual Development
+            - paragraph [ref=e58]: Age-appropriate activities designed to stimulate cognitive growth and learning.
+          - generic [ref=e59]:
+            - heading " Physical Development" [level=5] [ref=e60]:
+              - generic [ref=e61]: 
+              - text: Physical Development
+            - paragraph [ref=e62]: Structured playtime and activities to build motor skills and coordination.
+          - generic [ref=e63]:
+            - heading " Health & Wellness" [level=5] [ref=e64]:
+              - generic [ref=e65]: 
+              - text: Health & Wellness
+            - paragraph [ref=e66]: Nutrition guidance and health monitoring to ensure optimal growth and development.
+    - contentinfo [ref=e67]:
+      - paragraph [ref=e68]: © 2024 Happy Caterpillars. All rights reserved.

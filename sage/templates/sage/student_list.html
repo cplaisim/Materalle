@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block student_list %}
+                <h1 class="mt-5">Student Attendance</h1>
+                        <ul>
+                            {% for student in students %}
+                            <li>
+                                <img src="{{ student.picture.url }}" alt="{{ student.name }}" style="width:100px;height:100px;">
+                                <p>{{ student.name }}</p>
+                                <p>{{ student.date_of_birth }}</p>
+                                <form method="post" action="{% url 'check-in-out' student.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit">Check In/Out</button>
+                                </form>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        <a href="{% url 'generate-report' %}">Download Attendance Report</a>                 
+{% endblock %}

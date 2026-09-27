@@ -1,0 +1,28 @@
+<div class="table-responsive">
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Date of Birth</th>
+                {% for day in days %}
+                    <th>Day {{ day }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in attendance_data %}
+            <tr>
+                <td>{{ student.name }}</td>
+                <td>{{ student.dob }}</td>
+                {% for status in student.attendance %}
+                    <td>
+                        <div>B: {{ status.breakfast }}</div>
+                        <div>L: {{ status.lunch }}</div>
+                        <div>S: {{ status.pm_snack }}</div>
+                    </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

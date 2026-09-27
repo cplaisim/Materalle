@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="schedule-container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Daily Guideline Schedule</h2>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm" id="loadDefaultBtn" {% if not has_default %}disabled{% endif %}>
+                <i class="fas fa-undo me-1"></i>Load Default
+            </button>
+            <button class="btn btn-outline-success btn-sm" id="setDefaultBtn">
+                <i class="fas fa-star me-1"></i>Set as Default
+            </button>
+            <button class="btn btn-primary btn-sm" id="saveScheduleBtn">
+                <i class="fas fa-save me-1"></i>Save Schedule
+            </button>
+        </div>
+    </div>
+    <p class="text-muted small mb-3">Fill in the daily schedule once. Click <strong>Set as Default</strong> to reuse it each day.</p>
+
+    <!-- Default indicator + Proceed button -->
+    <div class="d-flex align-items-center gap-3 mb-3">
+        <span id="defaultIndicator" class="badge {% if has_default %}bg-success{% else %}bg-secondary{% endif %} py-2 px-3">
+            <i class="fas {% if has_default %}fa-check-circle{% else %}fa-circle{% endif %} me-1"></i>
+            {% if has_default %}Default Active{% else %}No Default Set{% endif %}
+        </span>
+        <button class="btn btn-dark btn-sm" id="proceedBtn">
+            <i class="fas fa-arrow-right me-1"></i><span id="proceedLabel">Proceed</span>
+        </button>
+        <button class="btn btn-primary btn-sm" id="generateWeekBtn">
+            <i class="fas fa-calendar-week me-1"></i>Generate Weekly Schedule
+        </button>
+    </div>
+
+    <div id="scheduleStatus" class="mb-2"></div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered schedule-table" id="scheduleGrid">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:100px;">Time</th>
+                    <th>Activity</th>
+                    <th style="width:160px;">Agent</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in grid %}
+                <tr data-hour="{{ row.hour }}">
+                    <td class="time-label fw-bold text-muted">{{ row.label }}</td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm activity-input"
+                               placeholder="Describe activity..." value="{{ row.activity }}">
+                    </td>
+                    <td>
+                        <select class="form-select form-select-sm agent-select">
+                            <option value="">— agent —</option>
+                            <option value="grace" {% if row.agent == 'grace' %}selected{% endif %}>Grace</option>
+                            <option value="patience" {% if row.agent == 'patience' %}selected{% endif %}>Patience</option>
+                            <option value="sage" {% if row.agent == 'sage' %}selected{% endif %}>Sage</option>
+                        </select>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Link to existing weekly schedule -->
+    <div class="mt-3">
+        <a href="{% url 'sage:weekly_schedule' %}" class="btn btn-outline-dark btn-sm">
+            <i class="fas fa-calendar-alt me-1"></i>View Weekly Schedule
+        </a>
+    </div>
+</div>
+
+<style>
+.schedule-container {
+    max-width: 960px;
+    margin: 1rem auto;
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+.schedule-table th {
+    text-align: center;
+    font-size: 0.85rem;
+}
+.schedule-table td {
+    padding: 6px 8px !important;
+    vertical-align: middle;
+}
+.activity-input {
+    font-size: 0.85rem;
+    border: 1px solid #e0e0e0;
+}
+.agent-select {
+    font-size: 0.8rem;
+    border: 1px solid #e0e0e0;
+    color: #666;
+}
+.agent-select option[value="grace"]    { color: #d63384; }
+.agent-select option[value="patience"] { color: #0d6efd; }
+.agent-select option[value="sage"]     { color: #198754; }
+.time-label {
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+tr.filled td {
+    background: #f8fdf8;
+}
+tr.current-slot td {
+    background: #fff3cd !important;
+    border-left: 3px solid #ffc107;
+}
+tr.current-slot .time-label {
+    color: #856404;
+    font-weight: 700;
+}
+#proceedBtn {
+    min-width: 180px;
+}
+.agent-color-grace    { color: #d63384; }
+.agent-color-patience { color: #0d6efd; }
+.agent-color-sage     { color: #198754; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const grid = document.getElementById('scheduleGrid');
+    const statusDiv = document.getElementById('scheduleStatus');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+        || document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    function showStatus(msg, type) {
+        statusDiv.innerHTML = `<div class="alert alert-${type} py-1 px-2 small">${msg}</div>`;
+        setTimeout(() => statusDiv.innerHTML = '', 3000);
+    }
+
+    function refreshHighlights() {
+        grid.querySelectorAll('tbody tr').forEach(tr => {
+            const val = tr.querySelector('.activity-input').value.trim();
+            tr.classList.toggle('filled', val.length > 0);
+        });
+    }
+    grid.addEventListener('input', refreshHighlights);
+    refreshHighlights();
+
+    function collectSlots() {
+        const slots = [];
+        grid.querySelectorAll('tbody tr').forEach(tr => {
+            const hour = tr.dataset.hour;
+            const activity = tr.querySelector('.activity-input').value.trim();
+            const agent = tr.querySelector('.agent-select').value;
+            if (activity) {
+                slots.push({ hour, activity, agent });
+            }
+        });
+        return slots;
+    }
+
+    async function postAction(body) {
+        const resp = await fetch('{% url "sage:schedule" %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify(body),
+            credentials: 'same-origin',
+        });
+        return resp.json();
+    }
+
+    document.getElementById('saveScheduleBtn').addEventListener('click', async () => {
+        const slots = collectSlots();
+        const data = await postAction({ action: 'save', slots });
+        showStatus(data.success ? data.message : (data.error || 'Save failed'), data.success ? 'success' : 'danger');
+    });
+
+    document.getElementById('setDefaultBtn').addEventListener('click', async () => {
+        const slots = collectSlots();
+        if (slots.length === 0) {
+            showStatus('Fill in the schedule first.', 'warning');
+            return;
+        }
+        await postAction({ action: 'save', slots });
+        const data = await postAction({ action: 'set_default' });
+        if (data.success) {
+            showStatus('Default schedule saved!', 'success');
+            document.getElementById('loadDefaultBtn').disabled = false;
+        } else {
+            showStatus(data.error || 'Failed', 'danger');
+        }
+    });
+
+    document.getElementById('loadDefaultBtn').addEventListener('click', async () => {
+        if (!confirm('Replace current schedule with the default?')) return;
+        const data = await postAction({ action: 'load_default' });
+        if (data.success) {
+            location.reload();
+        } else {
+            showStatus(data.error || 'Failed', 'danger');
+        }
+    });
+
+    // --- Current time slot highlighting & Proceed button ---
+    const agentUrls = {
+        grace: '/grace/',
+        patience: '/patience/',
+        sage: '/sage/',
+    };
+    const agentLabels = {
+        grace: 'Grace',
+        patience: 'Patience',
+        sage: 'Sage',
+    };
+
+    function updateCurrentSlot() {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const proceedBtn = document.getElementById('proceedBtn');
+        const proceedLabel = document.getElementById('proceedLabel');
+        let targetAgent = null;
+        let targetActivity = '';
+
+        // Clear previous highlights
+        grid.querySelectorAll('tbody tr').forEach(tr => tr.classList.remove('current-slot'));
+
+        // Find the current or most recent filled slot
+        let matchedRow = null;
+        const rows = Array.from(grid.querySelectorAll('tbody tr'));
+        for (let i = rows.length - 1; i >= 0; i--) {
+            const hour = parseInt(rows[i].dataset.hour);
+            if (hour <= currentHour) {
+                const activity = rows[i].querySelector('.activity-input').value.trim();
+                if (activity) {
+                    matchedRow = rows[i];
+                    break;
+                }
+            }
+        }
+
+        if (matchedRow) {
+            matchedRow.classList.add('current-slot');
+            matchedRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetAgent = matchedRow.querySelector('.agent-select').value;
+            targetActivity = matchedRow.querySelector('.activity-input').value.trim();
+        }
+
+        if (targetAgent && agentUrls[targetAgent]) {
+            proceedBtn.disabled = false;
+            proceedLabel.textContent = `Go to ${agentLabels[targetAgent]} — ${targetActivity}`;
+            proceedBtn.className = `btn btn-sm agent-color-${targetAgent}`;
+            proceedBtn.style.border = '1px solid currentColor';
+            proceedBtn.onclick = () => { window.location.href = agentUrls[targetAgent]; };
+        } else {
+            proceedBtn.disabled = true;
+            proceedLabel.textContent = 'No activity right now';
+            proceedBtn.className = 'btn btn-secondary btn-sm';
+            proceedBtn.onclick = null;
+        }
+    }
+
+    updateCurrentSlot();
+    // Refresh every minute
+    setInterval(updateCurrentSlot, 60000);
+
+    // --- Generate Weekly Schedule (saves + redirects to weekly page) ---
+    const generateBtn = document.getElementById('generateWeekBtn');
+
+    generateBtn.addEventListener('click', async () => {
+        const slots = collectSlots();
+        if (slots.length === 0) {
+            showStatus('Fill in and save the guideline schedule first.', 'warning');
+            return;
+        }
+
+        // Save current schedule first
+        await postAction({ action: 'save', slots });
+
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating...';
+        showStatus('Generating weekly schedule... This may take a moment.', 'info');
+
+        try {
+            const resp = await fetch('{% url "sage:generate_weekly_schedule" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({}),
+                credentials: 'same-origin',
+            });
+            const data = await resp.json();
+            if (data.success) {
+                window.location.href = data.redirect || '{% url "sage:weekly_schedule" %}';
+            } else {
+                showStatus(data.error || 'Generation failed', 'danger');
+            }
+        } catch (err) {
+            showStatus('Error: ' + err.message, 'danger');
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-calendar-week me-1"></i>Generate Weekly Schedule';
+        }
+    });
+});
+</script>
+{% endblock %}

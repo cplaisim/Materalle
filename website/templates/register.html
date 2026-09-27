@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="text-center mb-0">Register</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% url 'website:register' %}">
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                <strong>Your Form Has Errors:</strong>
+                                {% for field in form %}
+                                    {% if field.errors %}
+                                        <p>{{ field.label }}: {{ field.errors|striptags }}</p>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if form.non_field_errors %}
+                                    <p>{{ form.non_field_errors|striptags }}</p>
+                                {% endif %}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+
+                        <!-- Basic Information -->
+                        <div class="mb-3">
+                            <label for="id_role" class="form-label">Role</label>
+                            {{ form.role }}
+                            {% if form.role.help_text %}
+                                <small class="form-text text-muted">{{ form.role.help_text }}</small>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">Username</label>
+                            {{ form.username }}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_first_name" class="form-label">First Name</label>
+                                {{ form.first_name }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_last_name" class="form-label">Last Name</label>
+                                {{ form.last_name }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_email" class="form-label">Email</label>
+                            {{ form.email }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_phone_number" class="form-label">Phone Number</label>
+                            {{ form.phone_number }}
+                            <small class="form-text text-muted">{{ form.phone_number.help_text }}</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_address" class="form-label">Address</label>
+                            {{ form.address }}
+                        </div>
+
+                        <!-- Administrator Fields -->
+                        <div id="admin-fields" style="display: none;">
+                            <h4 class="mt-4 mb-3">Administrator Information</h4>
+                            <div class="mb-3">
+                                <label for="id_admin_title" class="form-label">Title</label>
+                                {{ form.admin_title }}
+                                <small class="form-text text-muted">{{ form.admin_title.help_text }}</small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_admin_department" class="form-label">Department</label>
+                                {{ form.admin_department }}
+                                <small class="form-text text-muted">{{ form.admin_department.help_text }}</small>
+                            </div>
+                        </div>
+
+                        <!-- Password Fields -->
+                        <div class="mb-3">
+                            <label for="id_password1" class="form-label">Password</label>
+                            {{ form.password1 }}
+                            <small class="form-text text-muted">{{ form.password1.help_text }}</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="id_password2" class="form-label">Confirm Password</label>
+                            {{ form.password2 }}
+                        </div>
+
+                        {{ form.is_staff }}
+
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const roleSelect = document.getElementById('id_role');
+    const adminFields = document.getElementById('admin-fields');
+    const phoneNumberField = document.getElementById('id_phone_number');
+    const addressField = document.getElementById('id_address');
+    const isStaffField = document.getElementById('id_is_staff');
+
+    function updateFieldsBasedOnRole(role) {
+        // Show/hide admin fields
+        adminFields.style.display = role === 'ADMINISTRATOR' ? 'block' : 'none';
+        
+        // Update required fields
+        const isParentOrCaregiver = role === 'PARENT' || role === 'CAREGIVER';
+        phoneNumberField.required = isParentOrCaregiver;
+        addressField.required = isParentOrCaregiver;
+        
+        // Update is_staff field
+        isStaffField.checked = role === 'ADMINISTRATOR';
+    }
+
+    // Set initial state
+    updateFieldsBasedOnRole(roleSelect.value);
+
+    // Listen for changes
+    roleSelect.addEventListener('change', function() {
+        updateFieldsBasedOnRole(this.value);
+    });
+});
+</script>
+{% endblock %}

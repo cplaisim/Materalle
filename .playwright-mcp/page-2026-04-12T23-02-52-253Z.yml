@@ -1,0 +1,63 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Happy Caterpillars" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - list [ref=e4]:
+      - listitem [ref=e5]:
+        - link "Dashboard" [ref=e6] [cursor=pointer]:
+          - /url: /dashboard/
+      - listitem [ref=e7]:
+        - link "Grace" [ref=e8] [cursor=pointer]:
+          - /url: /grace/
+      - listitem [ref=e9]:
+        - link "Patience" [ref=e10] [cursor=pointer]:
+          - /url: /patience/
+      - listitem [ref=e11]:
+        - button "Sage ▾" [ref=e12] [cursor=pointer]
+    - generic [ref=e13]:
+      - generic [ref=e14]: Apr 6 – Apr 10
+      - generic "LLM backend (stored locally)" [ref=e15]:
+        - generic [ref=e16]: Anthropic
+        - checkbox [ref=e18] [cursor=pointer]
+      - button "Signed in as admin ▾" [ref=e21] [cursor=pointer]:
+        - text: Signed in as
+        - strong [ref=e22]: admin
+        - text: ▾
+  - generic [ref=e23]:
+    - heading "Settings" [level=1] [ref=e24]
+    - generic [ref=e25]:
+      - heading "LLM Backend" [level=3] [ref=e26]
+      - generic [ref=e27]:
+        - button "Web (API)" [ref=e28] [cursor=pointer]
+        - button "Local" [ref=e29] [cursor=pointer]
+      - generic [ref=e30]:
+        - paragraph [ref=e31]: Run models on your own hardware. Choose your inference server below.
+        - generic [ref=e32]:
+          - button "Ollama" [ref=e33] [cursor=pointer]
+          - button "LM Studio" [ref=e34] [cursor=pointer]
+          - button "vLLM" [ref=e35] [cursor=pointer]
+          - button "llama.cpp" [ref=e36] [cursor=pointer]
+        - generic [ref=e37]:
+          - generic [ref=e38]: LM Studio URL
+          - textbox [ref=e39]: http://localhost:1234
+        - generic [ref=e40]:
+          - generic [ref=e41]: Model
+          - textbox "model name" [ref=e42]: test-model
+      - button "Save" [ref=e43] [cursor=pointer]
+    - generic [ref=e44]:
+      - heading "System Health" [level=3] [ref=e45]
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - generic [ref=e48]: Django Server
+          - generic [ref=e51]: Operational
+        - generic [ref=e52]:
+          - generic [ref=e53]: Database (PostgreSQL)
+          - generic [ref=e56]: Operational
+        - generic [ref=e57]:
+          - generic [ref=e58]: LLM — lmstudio
+          - generic [ref=e61]: Offline
+    - link "← Back to Home" [ref=e62] [cursor=pointer]:
+      - /url: /
+  - button "Open Next.js Dev Tools" [ref=e68] [cursor=pointer]:
+    - img [ref=e69]
+  - alert [ref=e72]

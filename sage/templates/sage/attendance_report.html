@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load menu_filters %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>{{ title|default:"Monthly Attendance Report" }}</h2>
+    <p class="text-muted mb-3">Sage — check-in/check-out by day. One-tap visibility for providers and families.</p>
+    {% if student_list %}
+    <div class="table-responsive">
+        <table class="table table-hover attendance-table">
+            <thead>
+                <tr>
+                    <th>{{ name_header|default:"Child" }}</th>
+                    <th>{{ dob_header|default:"Date of Birth" }}</th>
+                    {% for day in date_range %}
+                        <th class="text-center" style="min-width: 36px;">{{ day }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in student_list %}
+                <tr>
+                    <td><strong>{{ student.name }}</strong></td>
+                    <td>{{ student.date_of_birth|date:"M d, Y" }}</td>
+                    {% for day in date_range %}
+                        <td class="text-center">
+                            {% with day_index=forloop.counter0 %}
+                            {% if student.attendance_by_day|index:day_index %}
+                                <span class="text-success" aria-label="Present">{{ present_symbol|default:"✓" }}</span>
+                            {% else %}
+                                <span class="text-muted" aria-label="Absent">{{ absent_symbol|default:"—" }}</span>
+                            {% endif %}
+                            {% endwith %}
+                        </td>
+                    {% endfor %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{{ date_range|length|add:2 }}" class="text-center text-muted py-4">No children enrolled. Add child profiles to see attendance.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center text-muted py-5">
+        <p>No attendance data available for this period.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

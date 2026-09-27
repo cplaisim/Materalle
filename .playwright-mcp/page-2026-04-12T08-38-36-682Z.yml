@@ -1,0 +1,44 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Happy Caterpillars" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - list [ref=e4]:
+      - listitem [ref=e5]:
+        - link "Register" [ref=e6] [cursor=pointer]:
+          - /url: /register/
+      - listitem [ref=e7]:
+        - link "Login" [ref=e8] [cursor=pointer]:
+          - /url: /login/
+  - generic [ref=e9]:
+    - banner [ref=e10]:
+      - heading "Chat with Grace" [level=1] [ref=e11]
+    - generic [ref=e12]:
+      - generic [ref=e14]:
+        - heading "Grace" [level=5] [ref=e15]
+        - paragraph [ref=e16]: Social-emotional development, reading & music
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e19]: Grace
+          - generic [ref=e20]:
+            - button "Emotional Awareness" [ref=e21] [cursor=pointer]: ♥ Emotional Awareness
+            - button "Sharing" [ref=e22] [cursor=pointer]: 🤝 Sharing
+            - button "Empathy" [ref=e23] [cursor=pointer]: 💛 Empathy
+            - button "Conflict Resolution" [ref=e24] [cursor=pointer]: ⚖ Conflict Resolution
+            - button "Self-Regulation" [ref=e25] [cursor=pointer]: 🧠 Self-Regulation
+            - button "Social Play" [ref=e26] [cursor=pointer]: 👥 Social Play
+            - button "Communication" [ref=e27] [cursor=pointer]: 💬 Communication
+        - generic [ref=e29]:
+          - generic [ref=e30]: G
+          - paragraph [ref=e32]: Hello! I'm Grace, your social-emotional development guide. How can I help with reading, music, emotional skills, or language today?
+        - generic [ref=e33]:
+          - textbox "Type your message…" [ref=e34]
+          - button "Send" [disabled] [ref=e35]
+    - generic [ref=e36]:
+      - generic [ref=e37]:
+        - heading "Active Participant" [level=6] [ref=e38]
+        - generic [ref=e39]:
+          - generic [ref=e40]: 0 / 0
+          - button "‹" [disabled] [ref=e41]
+          - button "›" [disabled] [ref=e42]
+      - paragraph [ref=e43]: No children enrolled yet.
+  - alert [ref=e44]

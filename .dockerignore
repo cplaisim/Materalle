@@ -1,0 +1,64 @@
+# Version control
+.git
+.github
+
+# Virtual environments
+venv
+materalle
+**/.venv
+
+# Python cache
+__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Node
+**/node_modules
+**/npm-debug.log
+
+# Logs
+*.log
+debug.log
+
+# Static (rebuilt in container)
+staticfiles
+
+# IDE
+.vscode
+.cursor
+.claude
+
+# OS
+.DS_Store
+**/.DS_Store
+
+# Environment (injected via docker-compose)
+.env
+.env.*
+!.env.example
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+
+# Docs
+LICENSE
+README.md
+*.md
+!requirements.txt
+
+# Secrets
+*.pem
+secrets.dev.yaml
+values.dev.yaml
+
+# Infra (not needed inside runtime image)
+infra
+**/.terraform
+**/*.tfstate*
+frontend-web
+frontend-mobile
+out
+.next

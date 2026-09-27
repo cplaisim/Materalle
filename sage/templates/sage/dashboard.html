@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block content %}   
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Today's Schedule</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for schedule_item in daily_schedule %}
+                    <div class="timeline-item">
+                        <div class="time">{{ schedule_item.start_time|time:"H:i" }} - {{ schedule_item.end_time|time:"H:i" }}</div>
+                        <div class="content">
+                            <h6>{{ schedule_item.activity }}</h6>
+                            <p class="text-muted">Agent: {{ schedule_item.agent }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p>No schedule items for today.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Recent Documents</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Uploaded</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in recent_documents %}
+                            <tr>
+                                <td>{{ doc.title }}</td>
+                                <td>{{ doc.category }}</td>
+                                <td>{{ doc.uploaded_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{{ doc.file.url }}" class="btn btn-sm btn-info">View</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4">No documents uploaded yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Attendance Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <span>Children Present:</span>
+                    <strong>{{ checked_in_count }}/{{ total_children }}</strong>
+                </div>
+                {% for child in checked_in_children %}
+                <div class="child-card mb-2 d-flex align-items-center">
+                    <img src="{{ child.profile_picture.url }}" class="rounded-circle" width="40" height="40">
+                    <div class="ms-2">
+                        <div>{{ child.first_name }} {{ child.last_name }}</div>
+                        <small class="text-muted">Since {{ child.check_in_time|time:"H:i" }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Today's Meals</h5>
+            </div>
+            <div class="card-body">
+                {% for meal in todays_meals %}
+                <div class="meal-card mb-3">
+                    <h6>{{ meal.get_meal_type_display }}</h6>
+                    <p class="mb-1">{{ meal.name }}</p>
+                    <small class="text-muted">Served: {{ meal.children.count }} children</small>
+                </div>
+                {% empty %}
+                <p>No meals recorded today.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'sage:record_meal' %}" class="btn btn-success mb-2 w-100">Record Meal</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center mt-4">
+  <div class="col-md-8">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 class="mb-0"><i class="fas fa-stethoscope me-2"></i>{{ meta.title }}</h3>
+      <a href="{% url 'website:llm_settings' %}" class="text-decoration-none">&larr; Back to Settings</a>
+    </div>
+
+    <p class="text-muted">{{ meta.description }}</p>
+
+    <!-- Status banner -->
+    <div class="d-flex align-items-center gap-3 p-3 mb-3"
+         style="background: #fff; border: 1px solid {{ status_color }}40; border-radius: 8px;">
+      <span style="display:inline-block; width:14px; height:14px; border-radius:50%;
+                   background:{{ status_color }}; box-shadow: 0 0 8px {{ status_color }};"></span>
+      <div>
+        <strong>{{ status_label }}</strong>
+        <span class="text-muted ms-2" style="font-size: 0.85rem;">
+          {% if all_passing %}All checks passed{% else %}{{ fail_count }} issue{{ fail_count|pluralize }} found{% endif %}
+        </span>
+      </div>
+      <a href="{% url 'website:system_health_detail' %}?service={{ service }}"
+         class="btn btn-sm btn-primary ms-auto">Re-run</a>
+    </div>
+
+    <!-- Diagnostics -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Diagnostics</h5>
+        {% for d in diagnostics %}
+        <div class="d-flex align-items-start gap-2 p-2 mb-2"
+             style="background: {% if d.ok %}#f0fdf4{% else %}#fef2f2{% endif %};
+                    border-radius: 6px; border: 1px solid {% if d.ok %}#bbf7d0{% else %}#fecaca{% endif %};">
+          <span style="font-size: 1rem;">{% if d.ok %}&#x2705;{% else %}&#x274c;{% endif %}</span>
+          <div>
+            <div style="font-weight: 600; font-size: 0.9rem;">{{ d.name }}</div>
+            <div class="text-muted" style="font-size: 0.8rem;">{{ d.detail }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Tips -->
+    {% if not all_passing and meta.tips %}
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">Troubleshooting Tips</h5>
+        <ul class="mb-0" style="font-size: 0.85rem;">
+          {% for tip in meta.tips %}
+          <li class="mb-1">{{ tip }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

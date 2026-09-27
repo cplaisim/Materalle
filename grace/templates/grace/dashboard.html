@@ -1,0 +1,56 @@
+{% extends 'grace/base_grace.html' %}
+{% load static %}
+
+{% block grace_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent Activities</h5>
+            </div>
+            <div class="card-body">
+                {% for activity in activities %}
+                <div class="activity-card mb-3">
+                    <h6>{{ activity.title }}</h6>
+                    <p class="small text-muted">{{ activity.activity_type }} | Rating: {{ activity.average_rating }}/5</p>
+                    <p>{{ activity.description|truncatewords:30 }}</p>
+                    <a href="{% url 'activity_detail' activity.id %}" class="btn btn-sm btn-primary">View Details</a>
+                </div>
+                {% empty %}
+                <p>No activities recorded yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Checked-in Children</h5>
+            </div>
+            <div class="card-body">
+                {% for child in checked_in_children %}
+                <div class="child-card mb-2">
+                    <img src="{{ child.profile_picture.url }}" class="rounded-circle" width="40" height="40">
+                    <span class="ms-2">{{ child.first_name }} {{ child.last_name }}</span>
+                </div>
+                {% empty %}
+                <p>No children checked in.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

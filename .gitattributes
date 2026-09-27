@@ -1,0 +1,4 @@
+# Shell scripts are executed by the Linux kernel inside Docker images. A CRLF
+# shebang makes exec fail with "no such file or directory", so keep them LF
+# even when checked out on Windows with core.autocrlf=true.
+*.sh text eol=lf

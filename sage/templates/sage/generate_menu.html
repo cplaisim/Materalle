@@ -1,0 +1,580 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<!-- Add the external CSS link -->
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+<div class="menu-page-wrapper">
+<div class="loading-container" style="display: none;">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <div class="loading-text-container">
+            <div class="loading-text">Grace</div>
+            <div class="loading-text">Patience</div>
+            <div class="loading-text">Sage</div>
+        </div>
+        <div class="loading-progress-container">
+            <div class="loading-progress-bar"></div>
+        </div>
+        <div class="loading-status">Preparing your menu with care...</div>
+    </div>
+</div>
+
+<div class="control-section no-print">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <button onclick="window.print()" class="btn btn-primary">Print Menu</button>
+        <a href="{% url 'sage:grocery_list' %}" class="btn btn-secondary">Back to Grocery List</a>
+    </div>
+</div>
+
+<div class="menu-print-doc mt-4 mb-4">
+    <div class="card">
+        <div class="card-header text-center">
+            <h2 class="mb-2">CACFP MENU RECORD</h2>
+            <h3 class="mb-1">{{ provider_name }}</h3>
+            <p class="mb-1">{{ provider_address }}</p>
+            <p class="mb-0">Period: <span id="periodDisplay"></span></p>
+        </div>
+        <div class="card-body">
+            <div id="menuContainer" style="border-radius:0;">
+                <!-- Menu weeks will be dynamically inserted here -->
+            </div>
+
+            <div class="notes-section mt-4">
+                <h5 style="font-size:0.9rem; font-weight:700;">Notes:</h5>
+                <ol style="font-size:0.85rem; padding-left:1.2rem; margin:0;">
+                    <li>All meals include 1% MILK unless otherwise specified.</li>
+                    <li>Menu items are subject to change based on availability.</li>
+                    <li>Water is available throughout the day.</li>
+                    <li>All bread/alternate components are whole grain-rich.</li>
+                </ol>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4 pt-3" style="border-top:1px solid #999; font-size:0.85rem;">
+                <div>Provider Signature: ________________________</div>
+                <div>Date: ________________</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Menu Generation Settings</h5>
+        </div>
+                <div class="card-body">
+                    <form id="menuGenerationForm">
+                        {% csrf_token %}
+                        <input type="hidden" id="period" name="period" value="4">
+
+                        <div class="mb-3">
+                            <label class="form-label">Select Grocery Items</label>
+                            <div class="alert alert-info small">
+                                Select grocery items to build CACFP-compliant meals. Items are grouped by category and assembled per meal type following CACFP guidelines.
+                            </div>
+                            {% if grocery_items %}
+                            <div class="d-flex justify-content-between mb-2">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="selectAllItems">Select All</button>
+                                <span class="text-muted small" id="itemCount">0 selected</span>
+                            </div>
+                            <div class="grocery-list" style="max-height: 400px; overflow-y: auto;">
+                                {% regroup grocery_items by get_category_display as cat_list %}
+                                {% for cat in cat_list %}
+                                <div class="mb-2">
+                                    <div class="fw-bold small text-muted mb-1">{{ cat.grouper }}</div>
+                                    {% for item in cat.list %}
+                                    <div class="form-check grocery-item ms-2 mb-1">
+                                        <input class="form-check-input grocery-checkbox" type="checkbox" value="{{ item.id }}" id="item_{{ item.id }}" {% if item.is_default %}checked{% endif %}>
+                                        <label class="form-check-label" for="item_{{ item.id }}">
+                                            {{ item.name }}
+                                            <span class="badge {% if item.category == 'VEGETABLE' %}bg-success{% elif item.category == 'FRUIT' %}bg-warning text-dark{% elif item.category == 'GRAIN' %}bg-secondary{% elif item.category == 'PROTEIN' %}bg-danger{% elif item.category == 'DRINK' %}bg-info text-dark{% else %}bg-light text-dark{% endif %}" style="font-size:0.7rem;">{{ item.get_category_display }}</span>
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <p class="text-muted small">No grocery items yet. <a href="{% url 'sage:grocery_list' %}">Add items to your grocery list</a> first.</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small text-muted">CACFP Meal Patterns</label>
+                            <div class="small" style="font-size:0.75rem; line-height:1.6;">
+                                <div><strong>Breakfast:</strong> Grain + Fruit/Veg + Milk</div>
+                                <div><strong>Snacks:</strong> Pick 2 of Milk, Fruit/Veg, Grain, Protein</div>
+                                <div><strong>Lunch/Supper:</strong> Protein + Grain + Veg + Fruit + Milk</div>
+                            </div>
+                        </div>
+
+                        <!-- Previously created dishes -->
+                        {% if dishes %}
+                        <div class="mb-3">
+                            <details>
+                                <summary class="form-label small text-muted" style="cursor:pointer;">Previously Created Dishes ({{ dishes|length }})</summary>
+                                <div class="mt-2" style="max-height: 200px; overflow-y: auto;">
+                                    {% for dish in dishes %}
+                                    <div class="small mb-1 p-1" style="border-bottom: 1px solid #eee;">
+                                        <strong>{{ dish.title|default:"Untitled" }}</strong>
+                                        {% if dish.meal_type %}<span class="badge bg-dark" style="font-size:0.6rem;">{{ dish.get_meal_type_display }}</span>{% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </details>
+                        </div>
+                        {% endif %}
+
+                        <button type="submit" class="btn btn-primary" id="generateButton">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                            Generate Menu
+                        </button>
+                    </form>
+                </div>
+                </div>
+            </div>
+
+        <div class="col-md-8">
+            <div id="menuPreview" class="d-none">
+                <div class="d-flex justify-content-end mb-2 no-print">
+                    <button class="btn btn-outline-primary btn-sm" id="downloadMenu">
+                        <i class="fas fa-download me-1"></i>Download PDF
+                    </button>
+                </div>
+                <div class="menu-print-doc">
+                    <div id="menuContent" style="padding: 24px 32px;"></div>
+                </div>
+            </div>
+            <div id="errorDisplay" class="alert alert-danger d-none" role="alert"></div>
+        </div>
+    </div>
+</div>
+</div><!-- /.menu-page-wrapper -->
+
+{{ initial_menu|json_script:"initialMenuData" }}
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const menuData = urlParams.get('menu');
+    const currentPeriod = 4; // Monthly (4 weeks)
+    let menu = null;
+
+    // Server-embedded menu (current-menu view). Preferred over the query
+    // string: a full menu overruns gunicorn's 4094-byte request-line limit.
+    const embedded = document.getElementById('initialMenuData');
+
+    try {
+        if (menuData) {
+            menu = JSON.parse(menuData);
+        } else if (embedded) {
+            menu = JSON.parse(embedded.textContent);
+        }
+    } catch (error) {
+        console.error('Error parsing menu data:', error);
+    }
+
+    // Initialize date range
+    updateDateDisplay();
+
+    function updateDateDisplay() {
+        const today = new Date();
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay() + 1);
+
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + (currentPeriod * 7) - 3);
+
+        const formatDate = (date) => {
+            return date.toLocaleDateString('en-US', {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+            });
+        };
+
+        document.getElementById('periodDisplay').textContent =
+            `${formatDate(weekStart)} - ${formatDate(weekEnd)}`;
+    }
+
+    function createWeekTable(weekData, weekNumber) {
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        const today = new Date();
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay() + 1 + (weekNumber - 1) * 7);
+        
+        let tableHtml = `
+            <div class="week-section mb-4">
+                <h4 class="text-center mb-3">Week ${weekNumber}</h4>
+                <table class="table table-bordered menu-table">
+                    <thead class="thead-light">
+                        <tr>
+                            <th class="meal-type-col">Meal Components</th>`;
+        
+        // Add date headers
+        days.forEach((day, index) => {
+            const date = new Date(weekStart);
+            date.setDate(weekStart.getDate() + index);
+            const dateStr = date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric'
+            });
+            tableHtml += `<th class="day-col">${day}<br><small>${dateStr}</small></th>`;
+        });
+        
+        tableHtml += `</tr></thead><tbody>`;
+
+        // Process each meal type
+        Object.entries(weekData).forEach(([mealType, mealData], mealIndex) => {
+            // Add meal header
+            tableHtml += `
+                <tr class="meal-header">
+                    <td colspan="6" class="bg-light font-weight-bold">${mealType}</td>
+                </tr>`;
+
+            // Show dish titles row
+            if (mealData.titles) {
+                tableHtml += `<tr class="dish-title-row"><td class="component-col fw-semibold text-primary">Dish</td>`;
+                days.forEach(day => {
+                    tableHtml += `<td class="fw-semibold" style="color:#6f42c1;">${mealData.titles[day] || ''}</td>`;
+                });
+                tableHtml += `</tr>`;
+            }
+
+            // Process components
+            mealData.components.forEach(component => {
+                if (!component.items || Object.keys(component.items).length === 0) {
+                    tableHtml += `
+                        <tr class="section-header">
+                            <td colspan="6" class="text-muted ps-4">
+                                <em>${component.name}</em>
+                            </td>
+                        </tr>`;
+                } else {
+                    tableHtml += `
+                        <tr>
+                            <td class="component-col">${component.name}</td>
+                            ${days.map(day => `
+                                <td class="day-col">
+                                    ${component.items[day] || ''}
+                                </td>
+                            `).join('')}
+                        </tr>`;
+                }
+            });
+        });
+
+        tableHtml += `</tbody></table></div>`;
+        return tableHtml;
+    }
+
+    function updateDisplay() {
+        if (!menu) return;
+
+        const container = document.getElementById('menuContainer');
+        container.innerHTML = '';
+
+        // Display all 4 weeks
+        for (let i = 1; i <= currentPeriod; i++) {
+            const weekData = menu[`Week ${i}`];
+            if (weekData) {
+                container.innerHTML += createWeekTable(weekData, i);
+            }
+        }
+
+        updateDateDisplay();
+    }
+
+    // Initial display
+    if (menu) {
+        updateDisplay();
+    }
+
+    const form = document.getElementById('menuGenerationForm');
+    const menuPreview = document.getElementById('menuPreview');
+    const menuContent = document.getElementById('menuContent');
+    const downloadBtn = document.getElementById('downloadMenu');
+    const generateBtn = document.getElementById('generateButton');
+    const spinner = generateBtn.querySelector('.spinner-border');
+    const errorDisplay = document.getElementById('errorDisplay');
+    
+    function showError(message) {
+        errorDisplay.textContent = message;
+        errorDisplay.classList.remove('d-none');
+        menuPreview.classList.add('d-none');
+    }
+    
+    function hideError() {
+        errorDisplay.classList.add('d-none');
+        errorDisplay.textContent = '';
+    }
+    
+    function setLoading(isLoading) {
+        if (isLoading) {
+            spinner.classList.remove('d-none');
+            generateBtn.disabled = true;
+        } else {
+            spinner.classList.add('d-none');
+            generateBtn.disabled = false;
+        }
+    }
+    
+    // Select all / count for grocery items
+    const selectAllBtn = document.getElementById('selectAllItems');
+    const itemCountEl = document.getElementById('itemCount');
+    if (selectAllBtn) {
+        let allSelected = false;
+        selectAllBtn.addEventListener('click', function() {
+            allSelected = !allSelected;
+            document.querySelectorAll('.grocery-checkbox').forEach(cb => { cb.checked = allSelected; });
+            this.textContent = allSelected ? 'Deselect All' : 'Select All';
+            updateItemCount();
+        });
+    }
+    function updateItemCount() {
+        const count = document.querySelectorAll('.grocery-checkbox:checked').length;
+        if (itemCountEl) itemCountEl.textContent = count + ' selected';
+    }
+    document.querySelectorAll('.grocery-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateItemCount);
+    });
+    updateItemCount(); // Show initial count for pre-checked items
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        setLoading(true);
+        hideError();
+
+        // Get CSRF token
+        const csrftoken = getCookie('csrftoken');
+        if (!csrftoken) {
+            showError('CSRF token not found. Please refresh the page.');
+            setLoading(false);
+            return;
+        }
+
+        // Collect selected grocery item IDs
+        const grocery_item_ids = [];
+        document.querySelectorAll('.grocery-checkbox:checked').forEach(cb => {
+            grocery_item_ids.push(parseInt(cb.value));
+        });
+
+        if (grocery_item_ids.length === 0) {
+            showError('Please select at least one grocery item.');
+            setLoading(false);
+            return;
+        }
+
+        const data = {
+            period: document.getElementById('period').value,
+            grocery_item_ids: grocery_item_ids
+        };
+
+        try {
+            const response = await fetch('/sage/generate-menu/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken,
+                    'Accept': 'application/json'
+                },
+                credentials: 'same-origin',
+                mode: 'same-origin',
+                body: JSON.stringify(data)
+            });
+
+            // Debug log
+            console.log('Response status:', response.status);
+
+            let result;
+            try {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    result = await response.json();
+                } else {
+                    const text = await response.text();
+                    console.error('Received non-JSON response:', text);
+                    throw new Error('Server returned an invalid response format');
+                }
+            } catch (parseError) {
+                console.error('Error parsing response:', parseError);
+                throw new Error('Failed to parse server response');
+            }
+
+            console.log('Response data:', result);
+
+            if (!response.ok) {
+                throw new Error(result.error || `Server error: ${response.status}`);
+            }
+
+            if (!result.menu || !result.date_range) {
+                throw new Error('Invalid menu data received from server');
+            }
+
+            // Display the menu
+            hideError();
+            menuPreview.classList.remove('d-none');
+            displayMenu(result.menu, result.date_range);
+
+            // Store menu ID for download if available
+            if (result.menu_id) {
+                downloadBtn.dataset.menuId = result.menu_id;
+                downloadBtn.classList.remove('d-none');
+            } else {
+                downloadBtn.classList.add('d-none');
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            showError(error.message || 'Failed to generate menu. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    });
+    
+    downloadBtn.addEventListener('click', async function() {
+        const menuId = this.dataset.menuId;
+        if (!menuId) return;
+        
+        try {
+            const response = await fetch(`/sage/download-menu/${menuId}/`);
+            if (!response.ok) throw new Error('Failed to download menu');
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'menu.pdf';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+        } catch (error) {
+            console.error('Error:', error);
+            showError('Failed to download menu. Please try again.');
+        }
+    });
+});
+
+function displayMenu(menuData, dateRange) {
+    const menuContent = document.getElementById('menuContent');
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+
+    const startDate = new Date(dateRange.start);
+    const endDate = new Date(dateRange.end);
+
+    let html = `
+        <div style="text-align:center; border-bottom:3px double #333; padding-bottom:16px; margin-bottom:20px;">
+            <h2 style="font-size:1.5rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin:0 0 4px;">CACFP MENU RECORD</h2>
+            <p style="margin:0; color:#666;">
+                ${startDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} &mdash;
+                ${endDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                (${dateRange.weeks} weeks)
+            </p>
+        </div>
+    `;
+
+    for (const [weekKey, weekData] of Object.entries(menuData)) {
+        html += `<div class="week-section" style="margin-bottom:2rem;">
+            <h5 style="font-size:1rem; font-weight:700; text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid #999; padding-bottom:4px; text-align:center;">${weekKey}</h5>
+            <table class="menu-table" style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr><th style="background:#f0f0f0; border:1px solid #999; padding:5px 8px; font-size:0.85em;">Meal / Component</th>${days.map(d => `<th style="background:#f0f0f0; border:1px solid #999; padding:5px 8px; text-align:center; font-size:0.85em;">${d}</th>`).join('')}</tr>
+                </thead><tbody>`;
+
+        for (const [mealType, mealData] of Object.entries(weekData)) {
+            html += `<tr class="meal-header"><td colspan="6" style="background:#e8e8e8; font-weight:700; text-transform:uppercase; font-size:0.8em; letter-spacing:0.5px; border:1px solid #999; border-top:2px solid #666; padding:5px 8px;">${mealType}</td></tr>`;
+            if (mealData.titles) {
+                html += `<tr class="dish-title-row"><td style="border:1px solid #999; padding:5px 8px; font-weight:600; font-style:italic;">Dish</td>`;
+                days.forEach(day => {
+                    html += `<td style="border:1px solid #999; padding:5px 8px; font-style:italic; color:#6f42c1;">${mealData.titles[day] || ''}</td>`;
+                });
+                html += `</tr>`;
+            }
+            (mealData.components || []).forEach(comp => {
+                html += `<tr><td style="border:1px solid #999; padding:5px 8px; font-weight:600; width:130px;">${comp.name}</td>`;
+                days.forEach(day => {
+                    html += `<td style="border:1px solid #999; padding:5px 8px;">${comp.items[day] || ''}</td>`;
+                });
+                html += `</tr>`;
+            });
+        }
+
+        html += `</tbody></table></div>`;
+    }
+
+    html += `<div style="border-top:1px solid #999; padding-top:12px; margin-top:20px; font-size:0.85rem;">
+        <strong>Notes:</strong>
+        <ol style="padding-left:1.2rem; margin:4px 0 0;">
+            <li>All meals include 1% MILK unless otherwise specified.</li>
+            <li>Menu items are subject to change based on availability.</li>
+            <li>Water is available throughout the day.</li>
+            <li>All bread/alternate components are whole grain-rich.</li>
+        </ol>
+    </div>
+    <div style="display:flex; justify-content:space-between; margin-top:20px; padding-top:12px; border-top:1px solid #999; font-size:0.85rem;">
+        <div>Provider Signature: ________________________</div>
+        <div>Date: ________________</div>
+    </div>`;
+
+    menuContent.innerHTML = html;
+
+    // Also update the main report container
+    const reportContainer = document.getElementById('menuContainer');
+    if (reportContainer) reportContainer.innerHTML = html;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+<style>
+@media print {
+    .no-print, .control-section, .col-md-4, .navbar, .footer {
+        display: none !important;
+    }
+
+    .menu-print-doc {
+        box-shadow: none;
+        border: none;
+        max-width: 100%;
+    }
+
+    .week-section {
+        page-break-inside: avoid;
+    }
+
+    @page {
+        size: landscape;
+        margin: 1.5cm;
+    }
+}
+
+.dish-item {
+    transition: background-color 0.15s;
+}
+.dish-item:hover {
+    background-color: #faf8f5;
+}
+.dish-item .form-check-input:checked ~ .form-check-label {
+    font-weight: 500;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="mb-3">
+        <a href="{% url 'enroll:child_dashboard' child.child_id %}" class="btn btn-sm btn-outline-secondary" style="border-radius: var(--radius-sm);">&larr; Back to {{ child.child_name }}</a>
+    </div>
+    <div class="d-flex justify-content-center align-items-center gap-3 mb-4">
+        <a href="{% url 'enroll:child_agent_activities' child_id=child.child_id agent=prev_agent %}" class="btn btn-sm btn-outline-secondary" title="{{ prev_meta.label }}">
+            <i class="fas fa-chevron-left"></i>
+        </a>
+        <div class="text-center">
+            <h2 class="mb-0" style="color: {{ meta.color }};">{{ meta.label }}</h2>
+            <p class="text-muted mb-0">{{ meta.subtitle }} &middot; {{ child.child_name }}</p>
+        </div>
+        <a href="{% url 'enroll:child_agent_activities' child_id=child.child_id agent=next_agent %}" class="btn btn-sm btn-outline-secondary" title="{{ next_meta.label }}">
+            <i class="fas fa-chevron-right"></i>
+        </a>
+    </div>
+
+    <!-- Summary Bar -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm" style="border: none; border-radius: var(--radius-squircle); border-top: 4px solid {{ meta.color }};">
+                <div class="card-body">
+                    <div class="d-flex justify-content-center gap-5">
+                        <div class="text-center">
+                            <span style="font-size: 2rem;">😄</span>
+                            <div class="fw-bold fs-5">{{ likes }}</div>
+                            <div class="text-muted small">Liked</div>
+                        </div>
+                        <div class="text-center">
+                            <span style="font-size: 2rem;">😐</span>
+                            <div class="fw-bold fs-5">{{ normals }}</div>
+                            <div class="text-muted small">Okay</div>
+                        </div>
+                        <div class="text-center">
+                            <span style="font-size: 2rem;">😞</span>
+                            <div class="fw-bold fs-5">{{ dislikes }}</div>
+                            <div class="text-muted small">Disliked</div>
+                        </div>
+                        <div class="text-center">
+                            <span style="font-size: 2rem;">📊</span>
+                            <div class="fw-bold fs-5">{{ total }}</div>
+                            <div class="text-muted small">Total</div>
+                        </div>
+                    </div>
+                    {% if total > 0 %}
+                    <div class="progress mt-3" style="height: 10px; border-radius: 5px;">
+                        <div class="progress-bar bg-success" style="width: {% widthratio likes total 100 %}%;"></div>
+                        <div class="progress-bar bg-warning" style="width: {% widthratio normals total 100 %}%;"></div>
+                        <div class="progress-bar bg-danger" style="width: {% widthratio dislikes total 100 %}%;"></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activities Table -->
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="card shadow-sm" style="border: none; border-radius: var(--radius-squircle);">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background-color: var(--color-cream); border-bottom: 1px solid var(--color-warm-border); border-radius: var(--radius-squircle) var(--radius-squircle) 0 0;">
+                    <h5 class="card-title mb-0">Activities & Ratings</h5>
+                    <span class="badge" style="background:{{ meta.color }};color:#fff;">{{ total }} activit{{ total|pluralize:"y,ies" }}</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if activities %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width:90px;">Date</th>
+                                    <th>Activity</th>
+                                    <th>Description</th>
+                                    <th style="width:80px;">Type</th>
+                                    <th style="width:110px;">Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for act in activities %}
+                                <tr>
+                                    <td class="text-muted small">{{ act.date|date:"M d, Y" }}</td>
+                                    <td class="small fw-semibold">{{ act.title }}</td>
+                                    <td class="small text-muted">{{ act.description|truncatewords:25 }}</td>
+                                    <td><span class="badge bg-light text-dark" style="font-size:0.65rem;">{{ act.activity_type }}</span></td>
+                                    <td class="small">
+                                        {% if act.rating == 3 %}
+                                            <span class="text-success fw-bold">{{ act.rating_label }}</span>
+                                        {% elif act.rating == 2 %}
+                                            <span class="text-warning fw-bold">{{ act.rating_label }}</span>
+                                        {% elif act.rating == 1 %}
+                                            <span class="text-danger fw-bold">{{ act.rating_label }}</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-5">
+                        <p class="mb-0">No {{ meta.label }} activities recorded yet for {{ child.child_name }}.</p>
+                        <p class="small">Rate activities in the <a href="{% url 'sage:weekly_schedule' %}">weekly schedule</a> to build this profile.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

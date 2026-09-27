@@ -1,0 +1,16 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - heading "Happy Caterpillars" [level=1] [ref=e5]
+    - generic [ref=e7]:
+      - heading "Sign In" [level=2] [ref=e8]
+      - generic [ref=e9]:
+        - textbox "Username" [ref=e10]
+        - textbox "Password" [ref=e11]
+        - button "Sign In" [ref=e12] [cursor=pointer]
+      - paragraph [ref=e13]:
+        - text: Don't have an account?
+        - link "Register" [ref=e14] [cursor=pointer]:
+          - /url: /register
+  - button "Open Next.js Dev Tools" [ref=e20] [cursor=pointer]:
+    - img [ref=e21]
+  - alert [ref=e24]

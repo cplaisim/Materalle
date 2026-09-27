@@ -1,0 +1,229 @@
+{% extends 'sage/base_sage.html' %}
+{% load static %}
+
+{% block sage_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Document Library</h5>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                    Upload Document
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="searchDocs" placeholder="Search documents...">
+                        <select class="form-select" id="categoryFilter" style="max-width: 200px;">
+                            <option value="">All Categories</option>
+                            {% for category in document_categories %}
+                            <option value="{{ category.0 }}">{{ category.1 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Uploaded By</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for doc in documents %}
+                            <tr>
+                                <td>{{ doc.title }}</td>
+                                <td><span class="badge bg-info">{{ doc.get_category_display }}</span></td>
+                                <td>{{ doc.uploaded_by.username }}</td>
+                                <td>{{ doc.uploaded_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ doc.file.url }}" class="btn btn-sm btn-primary" target="_blank">
+                                            <i class="fas fa-eye"></i> View
+                                        </a>
+                                        <button class="btn btn-sm btn-info" onclick="askQuestion('{{ doc.id }}')">
+                                            <i class="fas fa-question"></i> Ask
+                                        </button>
+                                        {% if user.is_administrator %}
+                                        <button class="btn btn-sm btn-danger" onclick="deleteDocument('{{ doc.id }}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">No documents found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Ask About Documents</h5>
+            </div>
+            <div class="card-body">
+                <form id="questionForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Select Document</label>
+                        <select class="form-select" name="document_id" required>
+                            <option value="">Choose a document...</option>
+                            {% for doc in documents %}
+                            <option value="{{ doc.id }}">{{ doc.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Your Question</label>
+                        <textarea class="form-control" name="question" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Ask Claude</button>
+                </form>
+
+                <div id="answerSection" class="mt-4" style="display: none;">
+                    <h6>Answer:</h6>
+                    <div id="answerText" class="p-3 bg-light rounded"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Document Stats</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Total Documents:</span>
+                    <strong>{{ documents.count }}</strong>
+                </div>
+                {% for category in document_categories %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span>{{ category.1 }}:</span>
+                    <strong>{{ category_counts|get_item:category.0 }}</strong>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Upload Document</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" name="category" required>
+                            {% for category in document_categories %}
+                            <option value="{{ category.0 }}">{{ category.1 }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">File</label>
+                        <input type="file" class="form-control" name="file" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="uploadDocument()">Upload</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('searchDocs').addEventListener('input', function() {
+    // Add search functionality
+});
+
+document.getElementById('categoryFilter').addEventListener('change', function() {
+    // Add filter functionality
+});
+
+function askQuestion(docId) {
+    const question = prompt('What would you like to know about this document?');
+    if (question) {
+        fetch('/sage/documents/ask/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: JSON.stringify({
+                document_id: docId,
+                question: question
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('answerText').textContent = data.answer;
+            document.getElementById('answerSection').style.display = 'block';
+        });
+    }
+}
+
+function uploadDocument() {
+    const form = document.getElementById('uploadForm');
+    const formData = new FormData(form);
+    
+    fetch('/sage/documents/upload/', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+function deleteDocument(docId) {
+    if (confirm('Are you sure you want to delete this document?')) {
+        fetch(`/sage/documents/${docId}/delete/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+</script>
+{% endblock %} 

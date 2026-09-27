@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<header>
+    <h1>Chat with Grace</h1>
+</header>
+<div class="container-fluid agent-chat-layout">
+    <!-- Row 1: Image + Chat side by side -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <div class="card p-0 overflow-hidden h-100">
+                <img src="{% static 'images/grace.jpg' %}" alt="Grace" style="width:100%;height:100%;object-fit:cover;min-height:350px;">
+                <div class="card-img-overlay d-flex flex-column justify-content-end" style="background:linear-gradient(0deg,rgba(0,0,0,.6) 0%,transparent 50%);">
+                    <h5 class="text-white mb-0">Grace</h5>
+                    <p class="text-white-50 small mb-0">Social-emotional development, reading &amp; music</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="agent-chat-panel h-100">
+                {% include 'grace/chat.html' %}
+            </div>
+        </div>
+    </div>
+    <!-- Row 3: Active participant (one at a time) -->
+    <div class="row g-3">
+        <div class="col-12">
+            <div class="agent-participants-panel p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0"><i class="fas fa-child me-1"></i>Active Participant</h6>
+                    <div class="d-flex gap-2 align-items-center">
+                        <span class="text-muted small" id="childCounter">1 / {{ children_data|length }}</span>
+                        <button class="btn btn-sm btn-outline-secondary" id="prevChild"><i class="fas fa-chevron-left"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" id="nextChild"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+
+                {% if children_data %}
+                <div id="childCarousel">
+                    {% for cd in children_data %}
+                    <div class="child-slide {% if not forloop.first %}d-none{% endif %}" data-index="{{ forloop.counter0 }}" data-child-id="{{ cd.child.child_id }}">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-body">
+                                <input type="hidden" class="child-id" value="{{ cd.child.child_id }}">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h5 class="mb-0">
+                                            <a href="{% url 'enroll:child_dashboard' child_id=cd.child.child_id %}" class="text-decoration-none" style="color:inherit;">{{ cd.child.child_name }}</a>
+                                        </h5>
+                                        <p class="text-muted small mb-0">DOB: {{ cd.child.date_of_birth }}</p>
+                                    </div>
+                                    <span class="badge {% if cd.child.is_checked_in %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {% if cd.child.is_checked_in %}Present{% else %}Away{% endif %}
+                                    </span>
+                                </div>
+
+                                <!-- Record summary -->
+                                <div class="d-flex justify-content-around text-center mb-2 py-2 rounded" style="background:#f8f6f3;">
+                                    <div>
+                                        <div class="fw-bold text-success" data-stat="likes">{{ cd.likes }}</div>
+                                        <div class="text-muted" style="font-size:0.65rem;">Liked</div>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-warning" data-stat="normals">{{ cd.normals }}</div>
+                                        <div class="text-muted" style="font-size:0.65rem;">Okay</div>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-danger" data-stat="dislikes">{{ cd.dislikes }}</div>
+                                        <div class="text-muted" style="font-size:0.65rem;">Disliked</div>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold" data-stat="total">{{ cd.total_ratings }}</div>
+                                        <div class="text-muted" style="font-size:0.65rem;">Total</div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No children enrolled yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for CSRF & state -->
+<form method="POST" style="display:none;">
+    {% csrf_token %}
+    <input type="hidden" value="grace" name="page" />
+    <input type="hidden" value="" name="entry_id" id="currentEntryId" />
+</form>
+
+<script>
+(function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        var slides = document.querySelectorAll('.child-slide');
+        var counter = document.getElementById('childCounter');
+        var currentIndex = 0;
+        var total = slides.length;
+
+        function showSlide(idx) {
+            slides.forEach(function(s) { s.classList.add('d-none'); });
+            if (slides[idx]) {
+                slides[idx].classList.remove('d-none');
+                counter.textContent = (idx + 1) + ' / ' + total;
+                currentIndex = idx;
+            }
+        }
+
+        var prevBtn = document.getElementById('prevChild');
+        var nextBtn = document.getElementById('nextChild');
+        if (prevBtn) prevBtn.addEventListener('click', function() {
+            showSlide((currentIndex - 1 + total) % total);
+        });
+        if (nextBtn) nextBtn.addEventListener('click', function() {
+            showSlide((currentIndex + 1) % total);
+        });
+
+        // Store entry_id when chat produces a new activity
+        document.addEventListener('agentEntry', function(e) {
+            if (e.detail && e.detail.entry_id) {
+                document.getElementById('currentEntryId').value = e.detail.entry_id;
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

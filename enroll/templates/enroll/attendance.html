@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container-fluid">
+    <header class="mb-3">
+        <h1>Attendance</h1>
+    </header>
+    <div class="row g-3">
+        <!-- Main: Enrolled children with check-in/check-out -->
+        <div class="col-lg-8">
+            <div class="agent-participants-panel">
+                {% include 'enroll/participants.html' %}
+            </div>
+        </div>
+
+        <!-- Sidebar: Today's attendance log -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm" style="border: none; border-radius: var(--radius-squircle, 20%);">
+                <div class="card-header" style="background-color: var(--color-cream, #FDF8F3); border-bottom: 1px solid var(--color-warm-border, #E8E0D8);">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Today's Log</h5>
+                        <span class="badge bg-success">{{ checked_in_count }} checked in</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if attendance_logs %}
+                    <div class="list-group list-group-flush">
+                        {% for log in attendance_logs %}
+                        <div class="list-group-item py-2 px-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <strong class="small">{{ log.child.child_name }}</strong>
+                                {% if log.check_out %}
+                                    <span class="badge bg-secondary">Left</span>
+                                {% else %}
+                                    <span class="badge bg-success">Present</span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">
+                                In: {{ log.check_in|time:"g:i A" }}
+                                {% if log.check_out %}
+                                    &middot; Out: {{ log.check_out|time:"g:i A" }}
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <p class="mb-0">No check-ins recorded today.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

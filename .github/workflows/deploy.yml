@@ -1,0 +1,61 @@
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches: [master]
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: materalle-prod-backend
+  ECS_CLUSTER: materalle-prod-cluster
+  ECS_SERVICE: materalle-prod-backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build --platform linux/amd64 -f Dockerfile.prod -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Sync static files to S3
+        run: |
+          docker run --rm ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest python manage.py collectstatic --noinput || true
+          CONTAINER_ID=$(docker create ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest)
+          docker cp $CONTAINER_ID:/app/staticfiles /tmp/static
+          docker rm $CONTAINER_ID
+          aws s3 sync /tmp/static s3://materalle-prod-static-120569618568-us-east-1-an/static/ --delete
+
+      - name: Deploy to ECS
+        run: |
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --force-new-deployment
+
+      - name: Wait for deployment
+        run: |
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }}

@@ -1,0 +1,668 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+
+
+<!-- Add the external CSS link -->
+<link rel="stylesheet" href="{% static 'css/style.css' %}">
+<style>
+.new-item-highlight {
+    animation: highlightFade 3s ease-out;
+}
+@keyframes highlightFade {
+    0% { background: #e8f5e9; }
+    100% { background: transparent; }
+}
+</style>
+
+<!-- Loading Indicator -->
+<div class="loading-container">
+    <div class="loading-spinner"></div>
+</div>
+
+<div class="flex flex-col h-screen">
+    <!-- Upper Section - Input Area -->
+    <div class="h-1/2 p-4 border-b">
+        <div class="grid grid-cols-5 gap-4 h-full">
+            <!-- Manual Input Form -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4">Add Grocery Items</h2>
+                <form method="POST" id="addItemForm">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        {{ form.name.label_tag }}
+                        {{ form.name }}
+                    </div>
+                    <div class="form-group">
+                        {{ form.category.label_tag }}
+                        {{ form.category }}
+                    </div>
+                    <input type="checkbox" name="is_default" aria-describedby="id_is_default_helptext" id="id_is_default">
+                    <label for="id_is_default" class="form-check-label">set as default</label>
+                    <button type="submit" class="btn btn-primary">Add Item</button>
+                </form>
+            </div>
+            
+            <!-- File Upload Area -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4">Upload Grocery List</h2>
+                <form method="POST" id="upload-form" enctype="multipart/form-data" class="space-y-4">
+                    {% csrf_token %}
+                    <div class="flex flex-col space-y-2">
+                        <div class="mb-3">
+                            <label for="grocery_file" class="form-label">Upload File</label>
+                            <input type="file" class="form-control" id="grocery_file" name="grocery_file"
+                                   accept=".txt,.csv,.jpg,.jpeg,.png,.bmp,.tiff,.pdf">
+                            <small class="text-muted">Receipts, CSVs, PDFs, or text files</small>
+                        </div>
+                        <textarea name="grocery_list" class="form-control" rows="4"
+                                placeholder="Or paste your grocery list here, one item per line"></textarea>
+                        <button type="submit" class="btn btn-primary w-full">
+                            Upload List
+                        </button>
+                    </div>
+                </form>
+                <div id="upload-status" class="mt-4"></div>
+                <div id="upload-results" class="mt-4 space-y-4"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lower Section - Grocery List Table -->
+    <div class="h-1/2 p-4 overflow-auto">
+        <h2 class="text-xl font-bold mb-4">Current Grocery List</h2>
+        <div id="grocery-columns" class="grid grid-cols-5 gap-4">
+            <!-- Vegetables Column -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-bold text-lg mb-2">Vegetables</h3>
+                <ul class="space-y-2">
+                    {% for item in items %}
+                    {% if item.category == 'VEGETABLE' %}
+                    <li class="flex justify-between items-center">
+                        <input class="form-check-input item-checkbox vegetable-item" type="checkbox" name="items" value="{{item.id}}" item_name="{{item.name}}" {% if item.is_default %}checked{% endif %}/>
+                        <span>{{ item.name }}</span>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Fruits Column -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-bold text-lg mb-2">Fruits</h3>
+                <ul class="space-y-2">
+                    {% for item in items %}
+                    {% if item.category == 'FRUIT' %}
+                    <li class="flex justify-between items-center">
+                        <input class="form-check-input item-checkbox fruit-item" type="checkbox" name="items" value="{{item.id}}" item_name="{{item.name}}" {% if item.is_default %}checked{% endif %}/>
+                        <span>{{ item.name }}</span>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Grains Column -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-bold text-lg mb-2">Grains</h3>
+                <ul class="space-y-2">
+                    {% for item in items %}
+                    {% if item.category == 'GRAIN' %}
+                    <li class="flex justify-between items-center">
+                        <input class="form-check-input item-checkbox grain-item" type="checkbox" name="items" value="{{item.id}}" item_name="{{item.name}}" {% if item.is_default %}checked{% endif %}/>
+                        <span>{{ item.name }}</span>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Proteins Column -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-bold text-lg mb-2">Proteins</h3>
+                <ul class="space-y-2">
+                    {% for item in items %}
+                    {% if item.category == 'PROTEIN' %}
+                    <li class="flex justify-between items-center">
+                        <input class="form-check-input item-checkbox protein-item" type="checkbox" name="items" value="{{item.id}}" item_name="{{item.name}}" {% if item.is_default %}checked{% endif %}/>
+                        <span>{{ item.name }}</span>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Beverages Column -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h3 class="font-bold text-lg mb-2">Drinks</h3>
+                <ul class="space-y-2">
+                    {% for item in items %}
+                    {% if item.category == 'DRINK' %}
+                    <li class="flex justify-between items-center">
+                        <input class="form-check-input item-checkbox drink-item" type="checkbox" name="items" value="{{item.id}}" item_name="{{item.name}}" {% if item.is_default %}checked{% endif %}/>
+                        <span>{{ item.name }}</span>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Conflict Resolution Modal -->
+        <div id="conflictModal" class="modal fade" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Categorize These Items</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">The AI wasn't sure about these items. Please select the correct category for each.</p>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Category</th>
+                                </tr>
+                            </thead>
+                            <tbody id="conflictTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Skip</button>
+                        <button type="button" class="btn btn-primary" id="resolveConflictsBtn">
+                            Add to Grocery List
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Remove Confirmation Modal -->
+        <div id="removeModal" class="modal fade" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Remove These Items?</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">The following items will be removed from your grocery list:</p>
+                        <ul id="removeItemsList" class="list-group"></ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" id="confirmRemoveBtn">
+                            <i class="fas fa-trash me-1"></i>Remove Items
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Section -->
+        <div class="control-section flex-column" style="gap:10px;">
+            <div class="d-flex justify-content-center gap-3">
+                <button class="btn btn-danger" id="removeItemsBtn">
+                    <i class="fas fa-trash me-1"></i>Delete Selected
+                </button>
+                <button class="btn btn-outline-danger" id="clearListBtn">
+                    <i class="fas fa-broom me-1"></i>Clear List
+                </button>
+            </div>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="{% url 'sage:current_menu' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-utensils me-1"></i>Current Menu
+                </a>
+                <input type="hidden" id="menuPeriod" value="4">
+                <button class="btn btn-primary" id="generateMenuBtn">
+                    <i class="fas fa-magic me-1"></i>Generate Menu
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // UI Elements
+    const loadingContainer = document.querySelector('.loading-container');
+    const generateMenuBtn = document.getElementById('generateMenuBtn');
+    const uploadForm = document.getElementById('upload-form');
+    const statusDiv = document.getElementById('upload-status');
+    const resultsDiv = document.getElementById('upload-results');
+
+    // Utility Functions
+    const showLoading = () => loadingContainer.style.display = 'flex';
+    const hideLoading = () => loadingContainer.style.display = 'none';
+    
+    const getSelectedItems = (className) => {
+        return Array.from(document.querySelectorAll(`.${className}:checked`))
+            .map(checkbox => checkbox.getAttribute('item_name'));
+    };
+
+    // Save checkbox states
+    const saveCheckboxStates = () => {
+        const checkboxStates = {};
+        document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+            checkboxStates[checkbox.value] = checkbox.checked;
+        });
+        localStorage.setItem('checkboxStates', JSON.stringify(checkboxStates));
+    };
+
+    // Load checkbox states
+    const loadCheckboxStates = () => {
+        const savedStates = localStorage.getItem('checkboxStates');
+        if (savedStates) {
+            const checkboxStates = JSON.parse(savedStates);
+            document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+                if (checkboxStates.hasOwnProperty(checkbox.value)) {
+                    checkbox.checked = checkboxStates[checkbox.value];
+                }
+            });
+        }
+    };
+
+    // Add event listeners for checkbox changes
+    document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', saveCheckboxStates);
+    });
+
+    // Load saved states when page loads
+    loadCheckboxStates();
+
+    // CACFP Validation
+    const validateCACFPRequirements = (selectedItems) => {
+        const requirements = {
+            VEGETABLES: 3,
+            FRUITS: 3,
+            GRAINS: 3,
+            PROTEINS: 3
+        };
+
+        for (const [category, minCount] of Object.entries(requirements)) {
+            const items = selectedItems[category];
+            if (!items || items.length < minCount) {
+                alert('CACFP Guidelines require:\n\n' +
+                      '- At least 3 vegetables for variety\n' +
+                      '- At least 3 fruits for variety\n' +
+                      '- At least 3 grains (including whole grains)\n' +
+                      '- At least 3 protein sources\n\n' +
+                      'Please select more items to meet these requirements.');
+                return false;
+            }
+        }
+        return true;
+    };
+
+    // Event Handlers
+    const handleGenerateMenu = async (e) => {
+        e.preventDefault();
+        showLoading();
+
+        const activePeriod = document.getElementById('menuPeriod').value;
+
+        // Collect checked grocery item IDs
+        const grocery_item_ids = Array.from(document.querySelectorAll('.item-checkbox:checked'))
+            .map(cb => parseInt(cb.value));
+
+        if (grocery_item_ids.length === 0) {
+            alert('Please check at least one grocery item.');
+            hideLoading();
+            return;
+        }
+
+        // Validate CACFP requirements using names by category
+        const selectedItems = {
+            VEGETABLES: getSelectedItems('vegetable-item'),
+            FRUITS: getSelectedItems('fruit-item'),
+            GRAINS: getSelectedItems('grain-item'),
+            PROTEINS: getSelectedItems('protein-item'),
+            DRINKS: getSelectedItems('drink-item')
+        };
+
+        if (!validateCACFPRequirements(selectedItems)) {
+            hideLoading();
+            return;
+        }
+
+        try {
+            const response = await fetch('{% url "sage:generate_menu" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    grocery_item_ids: grocery_item_ids,
+                    period: activePeriod
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to generate menu');
+            }
+
+            const data = await response.json();
+            if (data.menu) {
+                const menuUrl = '{% url "sage:generate_menu" %}?' + new URLSearchParams({
+                    menu: JSON.stringify(data.menu),
+                    period: activePeriod
+                }).toString();
+                window.location.href = menuUrl;
+            } else {
+                throw new Error(data.error || 'Failed to generate menu');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert(error.message || 'Error generating menu');
+        } finally {
+            hideLoading();
+        }
+    };
+
+    const categoryCssMap = {
+        'VEGETABLE': 'vegetable-item',
+        'FRUIT': 'fruit-item',
+        'GRAIN': 'grain-item',
+        'PROTEIN': 'protein-item',
+        'DRINK': 'drink-item',
+    };
+
+    const categoryListSelector = {
+        'VEGETABLE': 0,
+        'FRUIT': 1,
+        'GRAIN': 2,
+        'PROTEIN': 3,
+        'DRINK': 4,
+    };
+
+    const addItemToColumn = (item) => {
+        const cat = (item.category || '').toUpperCase().replace(/S$/, '');
+        const colIndex = categoryListSelector[cat];
+        if (colIndex === undefined) return;
+        const columns = document.querySelectorAll('#grocery-columns > div');
+        const ul = columns[colIndex]?.querySelector('ul');
+        if (!ul) return;
+
+        // Skip duplicates already in the DOM
+        if (ul.querySelector(`input[value="${item.id}"]`)) return;
+
+        const cssClass = categoryCssMap[cat] || 'item-checkbox';
+        const li = document.createElement('li');
+        li.className = 'flex justify-between items-center new-item-highlight';
+        li.innerHTML =
+            `<input class="form-check-input item-checkbox ${cssClass}" type="checkbox" name="items" value="${item.id}" item_name="${item.name}" />` +
+            `<span>${item.name}</span>`;
+
+        li.querySelector('input').addEventListener('change', saveCheckboxStates);
+        ul.appendChild(li);
+    };
+
+    // ── Conflict Resolution Modal ──
+    const showConflictModal = (conflicts) => {
+        const tbody = document.getElementById('conflictTableBody');
+        tbody.innerHTML = '';
+
+        const categoryLabels = {
+            'VEGETABLE': 'Vegetable', 'FRUIT': 'Fruit', 'GRAIN': 'Grain',
+            'PROTEIN': 'Protein', 'DRINK': 'Drink', 'OTHER': 'Other'
+        };
+        const allCategories = ['VEGETABLE', 'FRUIT', 'GRAIN', 'PROTEIN', 'DRINK', 'OTHER'];
+
+        conflicts.forEach((conflict, idx) => {
+            const options = (conflict.alternatives && conflict.alternatives.length)
+                ? conflict.alternatives
+                : allCategories;
+
+            const optionsHtml = allCategories.map(cat => {
+                const selected = cat === conflict.suggested ? 'selected' : '';
+                const inAlts = options.includes(cat);
+                const label = categoryLabels[cat] || cat;
+                // Bold the suggested alternatives, dim the rest
+                const style = inAlts ? 'font-weight:600;' : 'color:#999;';
+                return `<option value="${cat}" ${selected} style="${style}">${label}</option>`;
+            }).join('');
+
+            const tr = document.createElement('tr');
+            tr.innerHTML =
+                `<td><strong>${conflict.name}</strong></td>` +
+                `<td><select class="form-select conflict-select" data-idx="${idx}" data-name="${conflict.name}">${optionsHtml}</select></td>`;
+            tbody.appendChild(tr);
+        });
+
+        // Show modal (Bootstrap 5)
+        const modal = new bootstrap.Modal(document.getElementById('conflictModal'));
+        modal.show();
+    };
+
+    document.getElementById('resolveConflictsBtn').addEventListener('click', async () => {
+        const selects = document.querySelectorAll('.conflict-select');
+        const resolved = Array.from(selects).map(sel => ({
+            name: sel.dataset.name,
+            category: sel.value,
+        }));
+
+        try {
+            const response = await fetch('{% url "sage:resolve_conflicts" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ resolved })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                // Add resolved items to the correct columns
+                (data.newItems || []).forEach(item => addItemToColumn(item));
+                saveCheckboxStates();
+
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('conflictModal')).hide();
+
+                // Update status
+                const statusDiv = document.getElementById('upload-status');
+                if (statusDiv && data.created > 0) {
+                    statusDiv.innerHTML += `<div class="text-green-500"> + ${data.created} conflict item(s) resolved</div>`;
+                }
+            } else {
+                alert(data.error || 'Failed to save');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error resolving conflicts: ' + err.message);
+        }
+    });
+
+    const handleFileUpload = async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const fileInput = form.querySelector('input[type="file"]');
+        const textArea = form.querySelector('textarea[name="grocery_list"]');
+
+        if (!fileInput.files[0] && !textArea.value.trim()) {
+            alert('Please either upload a file or paste your grocery list');
+            return;
+        }
+
+        try {
+            statusDiv.innerHTML = '<div class="text-blue-500">Categorizing items...</div>';
+            resultsDiv.innerHTML = '';
+            showLoading();
+
+            const response = await fetch('{% url "sage:upload_grocery_list" %}', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.error || 'Upload failed');
+            }
+
+            // Check existing items that match uploaded names
+            const allNewNames = new Set(
+                (data.newItems || []).map(i => i.name.toLowerCase())
+            );
+            document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+                const name = checkbox.getAttribute('item_name').toLowerCase();
+                // Also check items from categories response that weren't created (duplicates)
+                for (const [cat, items] of Object.entries(data.categories || {})) {
+                    if (items.map(i => i.toLowerCase()).includes(name)) {
+                        checkbox.checked = true;
+                    }
+                }
+            });
+
+            // Insert newly created items into the correct category columns
+            (data.newItems || []).forEach(item => {
+                addItemToColumn(item);
+            });
+
+            saveCheckboxStates();
+
+            const totalItems = Object.values(data.categories || {}).reduce((sum, arr) => sum + arr.length, 0);
+            const conflictCount = (data.conflicts || []).length;
+            statusDiv.innerHTML = `<div class="text-green-500">Processed ${totalItems} item(s) — ${data.createdCount} new added</div>`;
+
+            // Show conflict modal if there are ambiguous items
+            if (conflictCount > 0) {
+                statusDiv.innerHTML += `<div class="text-orange-500 mt-1">${conflictCount} item(s) need your input — choose a category below.</div>`;
+                showConflictModal(data.conflicts);
+            }
+
+            fileInput.value = '';
+            textArea.value = '';
+
+        } catch (error) {
+            console.error('Error:', error);
+            statusDiv.innerHTML = `<div class="text-red-500">Error: ${error.message}</div>`;
+        } finally {
+            hideLoading();
+        }
+    };
+
+    const handleRemoveItems = (e) => {
+        e.preventDefault();
+        const checkedBoxes = Array.from(document.querySelectorAll('input[name="items"]:checked'));
+
+        if (checkedBoxes.length === 0) {
+            alert("Please select items to remove");
+            return;
+        }
+
+        // Build the preview list
+        const ul = document.getElementById('removeItemsList');
+        ul.innerHTML = '';
+        checkedBoxes.forEach(cb => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            const name = cb.getAttribute('item_name') || 'Unknown';
+            const cat = cb.className.match(/(vegetable|fruit|grain|protein|drink)/i);
+            const badge = cat ? `<span class="badge bg-secondary">${cat[1]}</span>` : '';
+            li.innerHTML = `<span>${name}</span>${badge}`;
+            ul.appendChild(li);
+        });
+
+        const modal = new bootstrap.Modal(document.getElementById('removeModal'));
+        modal.show();
+    };
+
+    document.getElementById('confirmRemoveBtn').addEventListener('click', async () => {
+        const checkedBoxes = Array.from(document.querySelectorAll('input[name="items"]:checked'));
+        const selectedItems = checkedBoxes.map(cb => cb.value);
+
+        const formData = new FormData();
+        selectedItems.forEach(itemId => {
+            formData.append('items', itemId);
+        });
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+
+        try {
+            const response = await fetch('{% url "sage:remove_items" %}', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('removeModal')).hide();
+                // Remove the items from the DOM instead of full reload
+                checkedBoxes.forEach(cb => {
+                    const li = cb.closest('li');
+                    if (li) li.remove();
+                });
+                saveCheckboxStates();
+                statusDiv.innerHTML = `<div class="text-green-500">${selectedItems.length} item(s) removed successfully</div>`;
+            } else {
+                alert("Error: " + (data.error || "Failed to remove items"));
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert("Error removing items");
+        }
+    });
+
+    // Clear entire grocery list
+    document.getElementById('clearListBtn').addEventListener('click', async () => {
+        if (!confirm('Are you sure you want to clear your entire grocery list?')) return;
+
+        try {
+            const response = await fetch('{% url "sage:clear_grocery_list" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            });
+            const data = await response.json();
+            if (data.success) {
+                document.querySelectorAll('#grocery-columns ul').forEach(ul => ul.innerHTML = '');
+                localStorage.removeItem('checkboxStates');
+                statusDiv.innerHTML = '<div class="text-green-500">Grocery list cleared</div>';
+            } else {
+                alert('Error: ' + (data.error || 'Failed to clear list'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error clearing list');
+        }
+    });
+
+    // Event Listeners
+    generateMenuBtn.addEventListener('click', handleGenerateMenu);
+    uploadForm.addEventListener('submit', handleFileUpload);
+    document.getElementById('removeItemsBtn').addEventListener('click', handleRemoveItems);
+    
+    // Form Submissions
+    $("#addItemForm").on('submit', function(e) {
+        e.preventDefault();
+        $.ajax({
+            type: "POST",
+            url: "{% url 'sage:add_item' %}",
+            data: $(this).serialize(),
+            success: function(response) {
+                if (response.success) {
+                    location.reload();
+                } else {
+                    let errorMessage = typeof response.error === 'object' 
+                        ? Object.entries(response.error)
+                            .map(([field, errors]) => `${field}: ${errors.join(', ')}`)
+                            .join('\n')
+                        : response.error;
+                    alert(errorMessage || "Error adding item");
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Error:", error);
+                alert("Error adding item: " + error);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

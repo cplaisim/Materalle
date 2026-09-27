@@ -1,0 +1,28 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Happy Caterpillars" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - list [ref=e4]:
+      - listitem [ref=e5]:
+        - link "Dashboard" [ref=e6] [cursor=pointer]:
+          - /url: /dashboard/
+      - listitem [ref=e7]:
+        - link "Grace" [ref=e8] [cursor=pointer]:
+          - /url: /grace/
+      - listitem [ref=e9]:
+        - link "Patience" [ref=e10] [cursor=pointer]:
+          - /url: /patience/
+      - listitem [ref=e11]:
+        - button "Sage ▾" [ref=e12] [cursor=pointer]
+    - generic [ref=e13]:
+      - generic [ref=e14]: Apr 6 – Apr 10
+      - generic "LLM backend (stored locally)" [ref=e15]:
+        - generic [ref=e16]: Anthropic
+        - checkbox [ref=e18] [cursor=pointer]
+      - button "Signed in as admin ▾" [ref=e21] [cursor=pointer]:
+        - text: Signed in as
+        - strong [ref=e22]: admin
+        - text: ▾
+  - button "Open Next.js Dev Tools" [ref=e30] [cursor=pointer]:
+    - img [ref=e31]
+  - alert [ref=e34]

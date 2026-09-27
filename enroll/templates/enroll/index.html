@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+{% block content %}   
+        <h2 class="mt-5">Enroll a New Student</h2>
+        <form method="POST" action="{% url 'enroll:index' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            <div class="card mb-3">
+                <div class="card-body">
+
+                    <div class="form-group">
+                        {{ form.date_of_enrollment.label_tag }}
+                        {{ form.date_of_enrollment }}
+                        {{ form.date_of_enrollment.errors }}
+                    </div>
+
+                    <div class="form-group">
+                        {{ form.date_of_withdrawal.label_tag }}
+                        {{ form.date_of_withdrawal }}
+                        
+                    </div>
+
+                    <section style="border: 3px solid black;"> 
+                        <div class="form-group">
+                            {{ form.profile_picture.label_tag }}
+                            {{ form.profile_picture }}
+                            {{ form.profile_picture.errors }}
+                        </div>    
+
+                        <div class="form-group">
+                            {{ form.child_name.label_tag }}
+                            {{ form.child_name }}
+                            {{ form.child_name.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.date_of_birth.label_tag }}
+                            {{ form.date_of_birth }}
+                            {{ form.date_of_birth.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.child_address.label_tag }}
+                            {{ form.child_address }}
+                            {{ form.child_address.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.child_gender.label_tag }}
+                            {{ form.child_gender }}
+                            {{ form.child_gender.errors }}
+                        </div>
+                    </section>
+
+                    <section style="border: 3px solid black;"> 
+                        <div class="form-group">
+                            {{ form.parent_name.label_tag }}
+                            {{ form.parent_name }}
+                            {{ form.parent_name.errors }}
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.parent_address.label_tag }}
+                            {{ form.parent_address }}
+                            {{ form.parent_address.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.parent_phone.label_tag }}
+                            {{ form.parent_phone }}
+                            {{ form.parent_phone.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.parent_email.label_tag }}
+                            {{ form.parent_email }}
+                            {{ form.parent_email.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.ok_to_text }}
+                                {{ form.ok_to_text.label_tag }}
+                                {{ form.ok_to_text.errors }}
+                            </div>
+                        </div>
+
+
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.parent }}
+                                {{ form.parent.label_tag }}
+                                {{ form.parent.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.caretaker }}
+                                {{ form.caretaker.label_tag }}
+                                {{ form.caretaker.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <div class="form-check"> 
+                                {{ form.relative }}
+                                {{ form.relative.label_tag }}
+                                {{ form.relative.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.guardian }}
+                                {{ form.guardian.label_tag }}
+                                {{ form.guardian.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <div class="form-check"> 
+                                {{ form.other }}
+                                {{ form.other.label_tag }}
+                                {{ form.other.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.authorized_pickup }}
+                                {{ form.authorized_pickup.label_tag }}
+                                {{ form.authorized_pickup.errors }}
+                        </div>
+                    </section> 
+
+                    <section style="border: 3px solid black;"> 
+                        <div class="form-group">
+                            {{ form.parent_name_1.label_tag }}
+                            {{ form.parent_name_1 }}
+                            {{ form.parent_name_1.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.parent_phone_1.label_tag }}
+                            {{ form.parent_phone_1 }}
+                            {{ form.parent_phone_1.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.parent_email_1.label_tag }}
+                            {{ form.parent_email_1 }}
+                            {{ form.parent_email_1.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.address_1.label_tag }}
+                            {{ form.address_1 }}
+                            {{ form.address_1.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.ok_to_text_1 }}
+                                {{ form.ok_to_text_1.label_tag }}
+                                {{ form.ok_to_text_1.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.authorized_pickup_1 }}
+                                {{ form.authorized_pickup_1.label_tag }}
+                                {{ form.authorized_pickup_1.errors }}
+                        </div>
+                        </div>
+
+
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.authorized_pickup }}
+                                {{ form.authorized_pickup.label_tag }}
+                                {{ form.authorized_pickup.errors }}
+                        </div>
+                    </section> 
+
+                    <section style="border: 3px solid black;"> 
+                        <div class="form-group">
+                            {{ form.parent_name_2.label_tag }}
+                            {{ form.parent_name_2 }}
+                            {{ form.parent_name_2.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.parent_phone_2.label_tag }}
+                            {{ form.parent_phone_2 }}
+                            {{ form.parent_phone_2.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.parent_email_2.label_tag }}
+                            {{ form.parent_email_2 }}
+                            {{ form.parent_email_2.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.ok_to_text_2 }}
+                                {{ form.ok_to_text_2.label_tag }}
+                                {{ form.ok_to_text_2.errors }}
+                        </div>
+
+
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.authorized_pickup_2 }}
+                                {{ form.authorized_pickup_2.label_tag }}
+                                {{ form.authorized_pickup_2.errors }}
+                        </div>
+                    </section> 
+
+                    <section style="border: 3px solid black;"> 
+                        <div class="form-group">
+                            {{ form.parent_name_3.label_tag }}
+                            {{ form.parent_name_3}}
+                            {{ form.parent_name_3.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.parent_phone_3.label_tag }}
+                            {{ form.parent_phone_3 }}
+                            {{ form.parent_phone_3.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            {{ form.parent_email_3.label_tag }}
+                            {{ form.parent_email_3 }}
+                            {{ form.parent_email_3.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.ok_to_text_3 }}
+                                {{ form.ok_to_text_3.label_tag }}
+                                {{ form.ok_to_text_3.errors }}
+                        </div>
+
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.authorized_pickup_3 }}
+                                {{ form.authorized_pickup_3.label_tag }}
+                                {{ form.authorized_pickup_3.errors }}
+                        </div>
+
+                    </section> 
+
+                    <section style="border: 3px solid black;">
+                        <div class="form-group">
+                            {{ form.child_physician.label_tag }}
+                            {{ form.child_physician }}
+                            {{ form.child_physician.errors }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.child_physician_phone.label_tag }}
+                            {{ form.child_physician_phone }}
+                            {{ form.child_physician_phone.errors }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.preferred_hospital.label_tag }}
+                            {{ form.preferred_hospital }}
+                            {{ form.preferred_hospital.errors }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.hospital_phone.label_tag }}
+                            {{ form.hospital_phone }}
+                            {{ form.hospital_phone.errors }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.child_dentist.label_tag }}
+                            {{ form.child_dentist }}
+                            {{ form.child_dentist.errors }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.dentist_phone.label_tag }}
+                            {{ form.dentist_phone }}
+                            {{ form.dentist_phone.errors }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.child_allergies.label_tag }}
+                            {{ form.child_allergies }}
+                            {{ form.child_allergies.errors }}
+                        </div>
+                        <div class="form-check">
+                            {{ form.speech_therapy }}
+                            {{ form.speech_therapy.label_tag }}
+                            {{ form.speech_therapy.errors }}
+                        </div>
+                        <div class="form-check">
+                            {{ form.physical_therapy }}
+                            {{ form.physical_therapy.label_tag }}
+                            {{ form.physical_therapy.errors }}
+                        </div>
+                        <div class="form-check">
+                            {{ form.early_intervention }}
+                            {{ form.early_intervention.label_tag }}
+                            {{ form.early_intervention.errors }}
+                        </div>
+                        <div class="form-check">
+                            {{ form.other_therapy }}
+                            {{ form.other_therapy.label_tag }}
+                            {{ form.other_therapy.errors }}
+                        </div>
+                        <div class="form-check">
+                            {{ form.none_therapy }}
+                            {{ form.none_therapy.label_tag }}
+                            {{ form.none_therapy.errors }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.info_to_share.label_tag }}
+                            {{ form.info_to_share }}
+                            {{ form.info_to_share.errors }}
+                        </div>
+                    </section>
+
+                    <section style="border: 3px solid black;">    
+                        <div class="form-check">
+                            {{ form.consent_to_treat }}
+                            {{ form.consent_to_treat.label_tag }}
+                            {{ form.consent_to_treat.errors }}
+                        </div>
+                        <div class="form-check">
+                            {{ form.consent_to_transport }}
+                            {{ form.consent_to_transport.label_tag }}
+                            {{ form.consent_to_transport.errors }}
+                        </div>
+                        <div class="form-check">
+                            {{ form.consent_to_trip }}
+                            {{ form.consent_to_trip.label_tag }}
+                            {{ form.consent_to_trip.errors }}
+                        </div>
+                        <div class="form-check">
+                            {{ form.understand_permissions }}
+                            {{ form.understand_permissions.label_tag }}
+                            {{ form.understand_permissions.errors }}
+                        </div>
+                        <div class="form-check">
+                            {{ form.agree_to_update }}
+                            {{ form.agree_to_update.label_tag }}
+                            {{ form.agree_to_update.errors }}
+                        </div>
+                        <div class="form-check">
+                            {{ form.agree_policies }}
+                            {{ form.agree_policies.label_tag }}
+                            {{ form.agree_policies.errors }}
+                        </div>
+                        <div class="form-check">
+                            {{ form.photo_release }}
+                            {{ form.photo_release.label_tag }}
+                            {{ form.photo_release.errors }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.signature.label_tag }}
+                            {{ form.signature }}
+                            {{ form.signature.errors }}
+                        </div>
+                        <div class="form-group">
+                            {{ form.date_signed.label_tag }}
+                            {{ form.date_signed }}
+                            {{ form.date_signed.errors }}
+                        </div>
+                     </section>  
+            </div>
+            </div>
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">Submit Enrollment</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

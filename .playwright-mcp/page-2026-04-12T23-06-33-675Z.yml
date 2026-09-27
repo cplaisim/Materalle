@@ -1,0 +1,55 @@
+- generic [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Happy Caterpillars" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - list [ref=e21]:
+      - listitem [ref=e22]:
+        - link "Dashboard" [ref=e23] [cursor=pointer]:
+          - /url: /dashboard/
+      - listitem [ref=e24]:
+        - link "Grace" [ref=e25] [cursor=pointer]:
+          - /url: /grace/
+      - listitem [ref=e26]:
+        - link "Patience" [ref=e27] [cursor=pointer]:
+          - /url: /patience/
+      - listitem [ref=e28]:
+        - button "Sage ▾" [ref=e29] [cursor=pointer]
+    - generic [ref=e30]:
+      - generic [ref=e31]: Apr 6 – Apr 10
+      - generic "LLM backend (stored locally)" [ref=e32]:
+        - generic [ref=e33]: Anthropic
+        - checkbox [ref=e35] [cursor=pointer]
+      - button "Signed in as admin ▾" [ref=e38] [cursor=pointer]:
+        - text: Signed in as
+        - strong [ref=e39]: admin
+        - text: ▾
+  - generic [ref=e9]:
+    - heading "Settings" [level=1] [ref=e40]
+    - generic [ref=e41]:
+      - heading "LLM Backend" [level=3] [ref=e42]
+      - generic [ref=e43]:
+        - button "Web (API)" [active] [ref=e44] [cursor=pointer]
+        - button "Local" [ref=e45] [cursor=pointer]
+      - generic [ref=e79]:
+        - paragraph [ref=e80]: Uses the Anthropic API. Requires a valid API key.
+        - generic [ref=e81]:
+          - generic [ref=e82]: API Key
+          - textbox "sk-ant-..." [ref=e83]
+      - button "Save" [ref=e59] [cursor=pointer]
+    - generic [ref=e60]:
+      - heading "System Health" [level=3] [ref=e61]
+      - generic [ref=e62]:
+        - generic [ref=e63]:
+          - generic [ref=e64]: Django Server
+          - generic [ref=e67]: Operational
+        - generic [ref=e68]:
+          - generic [ref=e69]: Database (PostgreSQL)
+          - generic [ref=e72]: Operational
+        - generic [ref=e73]:
+          - generic [ref=e74]: LLM — ollama
+          - generic [ref=e77]: Operational
+    - link "← Back to Home" [ref=e78] [cursor=pointer]:
+      - /url: /
+  - button "Open Next.js Dev Tools" [ref=e16] [cursor=pointer]:
+    - img [ref=e17]
+  - alert [ref=e20]

@@ -1,0 +1,56 @@
+{% extends 'patience/base_patience.html' %}
+{% load static %}
+
+{% block patience_content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Record New Physical Activity</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="title" class="form-label">Activity Title</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="activity_type" class="form-label">Activity Type</label>
+                <select class="form-select" id="activity_type" name="activity_type" required>
+                    <option value="">Select activity type...</option>
+                    <option value="GROSS">Gross Motor</option>
+                    <option value="FINE">Fine Motor</option>
+                    <option value="BALANCE">Balance</option>
+                    <option value="COORDINATION">Coordination</option>
+                    <option value="STRENGTH">Strength</option>
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="equipment_needed" class="form-label">Required Equipment</label>
+                <textarea class="form-control" id="equipment_needed" name="equipment_needed" rows="2" required></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label for="safety_guidelines" class="form-label">Safety Guidelines</label>
+                <textarea class="form-control" id="safety_guidelines" name="safety_guidelines" rows="3" required></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="picture" class="form-label">Activity Picture</label>
+                <input type="file" class="form-control" id="picture" name="picture" accept="image/*">
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn btn-primary">Save Activity</button>
+                <a href="{% url 'patience:patience_activities' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

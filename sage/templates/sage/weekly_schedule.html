@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+{% load sage_extras %}
+{% block content %}
+<div class="weekly-container">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Weekly Schedule</h2>
+        <div class="d-flex gap-2">
+            <a href="{% url 'sage:schedule' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-edit me-1"></i>Edit Guideline
+            </a>
+            {% if has_current_menu and not has_meal_entries %}
+            <button class="btn btn-success btn-sm" id="applyMenuBtn" title="Apply {{ current_menu_title }} meals to this week">
+                <i class="fas fa-utensils me-1"></i>Apply Menu
+            </button>
+            {% endif %}
+            <button class="btn btn-primary btn-sm" id="regenerateBtn">
+                <i class="fas fa-sync-alt me-1"></i>Regenerate
+            </button>
+        </div>
+    </div>
+    <p class="text-muted small mb-2">
+        Week of <strong>{{ week_start|date:"M d, Y" }}</strong>
+        &middot; Activities linked to <strong>{{ children.count }}</strong> checked-in child{{ children.count|pluralize:"ren" }}
+    </p>
+
+    <!-- Active participant carousel -->
+    <div class="agent-participants-panel p-3 mb-3 rounded" style="background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.08);">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0"><i class="fas fa-child me-1"></i>Active Participant</h6>
+            <div class="d-flex gap-2 align-items-center">
+                <span class="text-muted small" id="childCounter">1 / {{ children_data|length }}</span>
+                <button class="btn btn-sm btn-outline-secondary" id="prevChild"><i class="fas fa-chevron-left"></i></button>
+                <button class="btn btn-sm btn-outline-secondary" id="nextChild"><i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+
+        {% if children_data %}
+        <div id="childCarousel">
+            {% for cd in children_data %}
+            <div class="child-slide {% if not forloop.first %}d-none{% endif %}" data-index="{{ forloop.counter0 }}" data-child-id="{{ cd.child.child_id }}">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <input type="hidden" class="child-id" value="{{ cd.child.child_id }}">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h5 class="mb-0">
+                                    <a href="{% url 'enroll:child_dashboard' child_id=cd.child.child_id %}" class="text-decoration-none" style="color:inherit;">{{ cd.child.child_name }}</a>
+                                </h5>
+                                <p class="text-muted small mb-0">DOB: {{ cd.child.date_of_birth }}</p>
+                            </div>
+                            <span class="badge bg-success">Present</span>
+                        </div>
+
+                        <!-- Record summary -->
+                        <div class="d-flex justify-content-around text-center mb-2 py-2 rounded" style="background:#f8f6f3;">
+                            <div>
+                                <div class="fw-bold text-success" data-stat="likes">{{ cd.likes }}</div>
+                                <div class="text-muted" style="font-size:0.65rem;">Liked</div>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-warning" data-stat="normals">{{ cd.normals }}</div>
+                                <div class="text-muted" style="font-size:0.65rem;">Okay</div>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-danger" data-stat="dislikes">{{ cd.dislikes }}</div>
+                                <div class="text-muted" style="font-size:0.65rem;">Disliked</div>
+                            </div>
+                            <div>
+                                <div class="fw-bold" data-stat="total">{{ cd.total_ratings }}</div>
+                                <div class="text-muted" style="font-size:0.65rem;">Total</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-4">No children checked in.</p>
+        {% endif %}
+    </div>
+
+    <div id="weeklyStatus" class="mb-2"></div>
+
+    {% if has_schedule %}
+    <div class="table-responsive">
+        <table class="table table-bordered weekly-table mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th style="width:80px;">Time</th>
+                    {% for day, dt in weekday_dates %}
+                    <th>{{ day }}<br><span class="text-muted" style="font-size:0.7rem;">{{ dt|date:"M d" }}</span></th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in grid %}
+                <tr>
+                    <td class="time-label fw-bold text-muted text-nowrap">{{ row.label }}</td>
+                    {% for day in weekdays %}
+                    {% with cell=row.days %}
+                    <td class="activity-cell" data-entry-id="{{ cell|get_day:day|get_key:'id' }}">
+                        {% with d=cell|get_day:day %}
+                        {% if d %}
+                        <div class="d-flex flex-column h-100">
+                            <span class="badge agent-badge-{{ d.agent }} mb-1" style="font-size:0.6rem;align-self:start;">{{ d.agent }}</span>
+                            {% if d.activity_type == 'MEAL' %}
+                            <div class="weekly-cell-title"><i class="fas fa-utensils me-1" style="font-size:0.7rem;color:#198754;"></i>{{ d.title }}</div>
+                            {% if d.description %}
+                            <div class="weekly-cell-desc meal-desc">{{ d.description|truncatewords:20 }}</div>
+                            {% endif %}
+                            {% else %}
+                            <div class="weekly-cell-title">{{ d.title }}</div>
+                            {% if d.description %}
+                            <div class="weekly-cell-desc">{{ d.description|truncatewords:20 }}</div>
+                            {% endif %}
+                            {% endif %}
+                            {% if d.activity_type %}
+                            <span class="badge {% if d.activity_type == 'MEAL' %}bg-success text-white{% else %}bg-light text-dark{% endif %} mt-1" style="font-size:0.6rem;align-self:start;">{{ d.activity_type }}</span>
+                            {% endif %}
+                            {% if children.count > 0 and d.id %}
+                            <div class="rating-row mt-auto pt-1">
+                                <button class="btn btn-link btn-sm p-0 rate-btn" data-entry="{{ d.id }}" data-rating="3" title="Like"><span style="font-size:1rem;">😄</span></button>
+                                <button class="btn btn-link btn-sm p-0 rate-btn" data-entry="{{ d.id }}" data-rating="2" title="Okay"><span style="font-size:1rem;">😐</span></button>
+                                <button class="btn btn-link btn-sm p-0 rate-btn" data-entry="{{ d.id }}" data-rating="1" title="Dislike"><span style="font-size:1rem;">😞</span></button>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <span class="text-muted small">&mdash;</span>
+                        {% endif %}
+                        {% endwith %}
+                    </td>
+                    {% endwith %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="text-center mt-3 no-print">
+        <button onclick="window.print()" class="btn btn-outline-dark btn-sm">
+            <i class="fas fa-print me-1"></i>Print Schedule
+        </button>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-calendar-week fa-3x text-muted mb-3"></i>
+        <p class="text-muted">No weekly schedule generated yet.</p>
+        <p class="text-muted small">Go to <a href="{% url 'sage:schedule' %}">Edit Guideline</a> to set up the daily template, then click <strong>Generate Weekly Schedule</strong>.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.weekly-container {
+    max-width: 1100px;
+    margin: 1rem auto;
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+.weekly-table th {
+    font-size: 0.8rem;
+    text-align: center;
+    vertical-align: middle;
+}
+.weekly-table td {
+    font-size: 0.8rem;
+    padding: 6px 8px !important;
+    vertical-align: top;
+    min-width: 140px;
+}
+.weekly-cell-title {
+    font-weight: 600;
+    font-size: 0.82rem;
+}
+.weekly-cell-desc {
+    color: #666;
+    font-size: 0.75rem;
+    margin-top: 2px;
+}
+.meal-desc {
+    color: #198754;
+    font-style: italic;
+}
+.time-label {
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+.agent-badge-grace { background: #d63384; color: #fff; }
+.agent-badge-patience { background: #0d6efd; color: #fff; }
+.agent-badge-sage { background: #198754; color: #fff; }
+.activity-cell {
+    min-height: 80px;
+}
+.rating-row {
+    border-top: 1px solid #eee;
+    padding-top: 3px;
+    margin-top: 4px;
+}
+.rate-btn {
+    text-decoration: none;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+.rate-btn:hover, .rate-btn.active {
+    opacity: 1;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+        || document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const statusDiv = document.getElementById('weeklyStatus');
+
+    function showStatus(msg, type) {
+        statusDiv.innerHTML = `<div class="alert alert-${type} py-1 px-2 small">${msg}</div>`;
+        setTimeout(() => statusDiv.innerHTML = '', 3000);
+    }
+
+    // Child carousel
+    var slides = document.querySelectorAll('.child-slide');
+    var counter = document.getElementById('childCounter');
+    var currentIndex = 0;
+    var total = slides.length;
+
+    function showSlide(idx) {
+        slides.forEach(function(s) { s.classList.add('d-none'); });
+        if (slides[idx]) {
+            slides[idx].classList.remove('d-none');
+            if (counter) counter.textContent = (idx + 1) + ' / ' + total;
+            currentIndex = idx;
+        }
+    }
+
+    var prevBtn = document.getElementById('prevChild');
+    var nextBtn = document.getElementById('nextChild');
+    if (prevBtn) prevBtn.addEventListener('click', function() {
+        showSlide((currentIndex - 1 + total) % total);
+    });
+    if (nextBtn) nextBtn.addEventListener('click', function() {
+        showSlide((currentIndex + 1) % total);
+    });
+
+    function getActiveChild() {
+        var activeSlide = document.querySelector('.child-slide:not(.d-none)');
+        if (!activeSlide) return null;
+        var childId = activeSlide.querySelector('.child-id');
+        return childId ? childId.value : null;
+    }
+
+    // Apply Menu button
+    const applyMenuBtn = document.getElementById('applyMenuBtn');
+    if (applyMenuBtn) {
+        applyMenuBtn.addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Applying...';
+            showStatus('Applying current menu to weekly schedule...', 'info');
+
+            try {
+                const resp = await fetch('{% url "sage:apply_menu_to_schedule" %}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify({}),
+                    credentials: 'same-origin',
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    showStatus(data.message, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showStatus(data.error || 'Failed to apply menu', 'danger');
+                }
+            } catch (err) {
+                showStatus('Error: ' + err.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-utensils me-1"></i>Apply Menu';
+            }
+        });
+    }
+
+    // Regenerate button
+    document.getElementById('regenerateBtn').addEventListener('click', async function() {
+        if (!confirm('Regenerate the weekly schedule? This will replace all current activities.')) return;
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating...';
+        showStatus('Generating weekly schedule... This may take a moment.', 'info');
+
+        try {
+            const resp = await fetch('{% url "sage:generate_weekly_schedule" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({}),
+                credentials: 'same-origin',
+            });
+            const data = await resp.json();
+            if (data.success) {
+                location.reload();
+            } else {
+                showStatus(data.error || 'Generation failed', 'danger');
+            }
+        } catch (err) {
+            showStatus('Error: ' + err.message, 'danger');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Regenerate';
+        }
+    });
+
+    // Rating buttons
+    document.querySelectorAll('.rate-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const childId = getActiveChild();
+            if (!childId) {
+                alert('No children checked in to rate for.');
+                return;
+            }
+            const entryId = this.dataset.entry;
+            const rating = this.dataset.rating;
+
+            try {
+                const resp = await fetch('{% url "sage:rate_weekly_activity" %}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify({ entry_id: entryId, child_id: childId, rating: rating }),
+                    credentials: 'same-origin',
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    const cell = this.closest('.rating-row');
+                    cell.querySelectorAll('.rate-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    // Update the active participant card stats
+                    var activeSlide = document.querySelector('.child-slide:not(.d-none)');
+                    if (activeSlide) {
+                        var statMap = {'3': 'likes', '2': 'normals', '1': 'dislikes'};
+                        var statKey = statMap[rating];
+                        if (statKey) {
+                            var el = activeSlide.querySelector('[data-stat="' + statKey + '"]');
+                            if (el) el.textContent = parseInt(el.textContent) + 1;
+                        }
+                        var totalEl = activeSlide.querySelector('[data-stat="total"]');
+                        if (totalEl) totalEl.textContent = parseInt(totalEl.textContent) + 1;
+                    }
+                    showStatus('Rating saved!', 'success');
+                } else {
+                    showStatus(data.error || 'Rating failed', 'danger');
+                }
+            } catch (err) {
+                showStatus('Error: ' + err.message, 'danger');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,114 @@
+services:
+  db:
+    image: postgres:15
+    container_name: materalle_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-materalle_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: materalle_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: materalle_ollama
+    restart: unless-stopped
+    ports:
+      - "12434:12434"
+    environment:
+      OLLAMA_HOST: 0.0.0.0:12434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: materalle_backend
+    restart: unless-stopped
+    command: gunicorn materalleapp.wsgi:application --bind 0.0.0.0:8000 --workers 2 --reload --timeout 120
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: materalleapp.settings
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_ALLOWED_HOSTS: "*"
+      OLLAMA_BASE_URL: http://ollama:12434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
+    volumes:
+      - .:/app
+      - ./staticfiles:/app/staticfiles
+      - ./media:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: materalle_worker
+    restart: unless-stopped
+    command: python -m celery -A materalleapp worker -l info --concurrency=2
+    env_file:
+      - .env
+    environment:
+      DJANGO_SETTINGS_MODULE: materalleapp.settings
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      OLLAMA_BASE_URL: http://ollama:12434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
+    volumes:
+      - .:/app
+    # Overrides the image's HTTP healthcheck, which never passes here: the
+    # worker shares the backend image but serves no HTTP.
+    healthcheck:
+      test: ["CMD-SHELL", "python -m celery -A materalleapp inspect ping -d celery@$$HOSTNAME -t 5"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+
+volumes:
+  db_data:
+  ollama_data:

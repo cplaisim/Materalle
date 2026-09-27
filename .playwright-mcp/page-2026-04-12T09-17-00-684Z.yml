@@ -1,0 +1,25 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Happy Caterpillars" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - list [ref=e4]:
+      - listitem [ref=e5]:
+        - link "Register" [ref=e6] [cursor=pointer]:
+          - /url: /register/
+      - listitem [ref=e7]:
+        - link "Login" [ref=e8] [cursor=pointer]:
+          - /url: /login/
+  - generic [ref=e9]:
+    - heading "Settings" [level=1] [ref=e10]
+    - generic [ref=e11]:
+      - heading "LLM Backend" [level=3] [ref=e12]
+      - paragraph [ref=e13]: Choose which AI backend the agents use. This preference is stored locally.
+      - generic [ref=e14]:
+        - button "anthropic" [ref=e15] [cursor=pointer]
+        - button "ollama" [ref=e16] [cursor=pointer]
+    - generic [ref=e17]:
+      - heading "Account" [level=3] [ref=e18]
+      - paragraph [ref=e19]: Full account management coming soon.
+    - link "← Back to Home" [ref=e20] [cursor=pointer]:
+      - /url: /
+  - alert [ref=e21]

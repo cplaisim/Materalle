@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-4">Grace - Social Development</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="list-group">
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        {% block grace_content %}
+        {% endblock %}
+    </div>
+</div>
+{% endblock %} 

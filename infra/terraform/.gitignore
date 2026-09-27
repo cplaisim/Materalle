@@ -1,0 +1,11 @@
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+lambda/bridge/build/
+lambda/bridge/bridge.zip
+v2/lambda/bridge/build/
+v2/lambda/bridge/bridge.zip
+v2/.terraform/
+v2/.terraform.lock.hcl

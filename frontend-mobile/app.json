@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Materalle",
+    "slug": "materalle-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "materalle",
+    "splash": {
+      "backgroundColor": "#FDF8F3"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.materalle.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FDF8F3"
+      },
+      "package": "com.materalle.mobile"
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": ["expo-router"]
+  }
+}

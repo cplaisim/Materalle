@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="btn-toolbar mb-4" role="toolbar">
+    <div class="btn-group mr-2" role="group">
+        <button class="btn btn-outline-primary">Photo</button>
+        <button class="btn btn-outline-primary">Video</button>
+        <button class="btn btn-outline-primary">Meal</button>
+        <button class="btn btn-outline-primary">Bathroom</button>
+        <button class="btn btn-outline-primary">Nap</button>
+        <button class="btn btn-outline-primary">Note</button>
+        <button class="btn btn-outline-primary">Incident</button>
+    </div>
+</div>
+
+<div class="container">
+    <form id="csrf-form" style="display:none;">
+        {% csrf_token %}
+    </form>
+    
+    {% if students %}
+        <div class="row">
+            {% for student in students %}
+                <div class="col-md-4 mb-4">
+                    <div class="card check-action-card" 
+                         data-toggle="tooltip" 
+                         title="{% if student.is_checked_in %}Click to check out{% else %}Click to check in{% endif %}">
+                        {% if student.profile_picture %}
+                            <img src="{{ MEDIA_URL }}{{ student.profile_picture }}" class="card-img-top" alt="{{ student.name }}">
+                        {% else %}
+                            <div class="card-img-top bg-light text-center py-4">
+                                <i class="fas fa-user fa-4x text-secondary"></i>
+                            </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ student.name }}</h5>
+                            <input type="hidden" class="child-id" value="{{ student.child_id }}">
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="attendance-status">
+                                    <span class="badge {% if student.is_checked_in %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {% if student.is_checked_in %}Present{% else %}Not Present{% endif %}
+                                    </span>
+                                </div>
+                                {% if student.is_checked_in %}
+                                    <button class="btn btn-danger checkout-btn" data-child-id="{{ student.child_id }}">Check Out</button>
+                                {% else %}
+                                    <button class="btn btn-success checkin-btn" data-child-id="{{ student.child_id }}">Check In</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">No students found.</div>
+    {% endif %}
+</div>
+
+<style>
+    .check-action-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .check-action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+    }
+</style>
+
+<script>
+$(document).ready(function() {
+    // Initialize tooltips
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Card click for check-in/check-out
+    $(".check-action-card").on("click", function() {
+        const cardBody = $(this).find(".card-body");
+        const childId = cardBody.find(".child-id").val();
+        const checkInBtn = cardBody.find(".checkin-btn");
+        const checkOutBtn = cardBody.find(".checkout-btn");
+        
+        // Determine action based on which button is present
+        const action = checkInBtn.length > 0 ? 'in' : 'out';
+        const button = action === 'in' ? checkInBtn : checkOutBtn;
+        
+        // Trigger the check-in/check-out action
+        handleCheckInOut(childId, action, button);
+    });
+    
+    // Button click for check-in/check-out (also works)
+    $('.checkin-btn, .checkout-btn').click(function(e) {
+        e.stopPropagation(); // Prevent the card click from also firing
+        var childId = $(this).data('child-id');
+        var action = $(this).hasClass('checkin-btn') ? 'in' : 'out';
+        handleCheckInOut(childId, action, $(this));
+    });
+    
+    function handleCheckInOut(childId, action, button) {
+        $.ajax({
+            url: '/enroll/check-in-out/' + childId + '/' + action + '/',
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    const card = button.closest('.check-action-card');
+                    const statusBadge = card.find('.attendance-status .badge');
+                    
+                    if (action === 'in') {
+                        button.removeClass('btn-success checkin-btn').addClass('btn-danger checkout-btn');
+                        button.text('Check Out');
+                        statusBadge.removeClass('bg-secondary').addClass('bg-success');
+                        statusBadge.text('Present');
+                        card.attr('title', 'Click to check out');
+                    } else {
+                        button.removeClass('btn-danger checkout-btn').addClass('btn-success checkin-btn');
+                        button.text('Check In');
+                        statusBadge.removeClass('bg-success').addClass('bg-secondary');
+                        statusBadge.text('Not Present');
+                        card.attr('title', 'Click to check in');
+                    }
+                    
+                    // Refresh tooltip
+                    $('[data-toggle="tooltip"]').tooltip('dispose');
+                    $('[data-toggle="tooltip"]').tooltip();
+                }
+            }
+        });
+    }
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends 'patience/base_patience.html' %}
+{% load static %}
+{% load patience_extras %}
+
+{% block patience_content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Progress Tracker</h5>
+                <div>
+                    <select class="form-select form-select-sm d-inline-block w-auto" id="childFilter">
+                        <option value="">All Children</option>
+                        {% for child in children %}
+                        <option value="{{ child.id }}">{{ child.first_name }} {{ child.last_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select class="form-select form-select-sm d-inline-block w-auto ms-2" id="activityTypeFilter">
+                        <option value="">All Activities</option>
+                        <option value="GROSS">Gross Motor</option>
+                        <option value="FINE">Fine Motor</option>
+                        <option value="BALANCE">Balance</option>
+                        <option value="COORDINATION">Coordination</option>
+                        <option value="STRENGTH">Strength</option>
+                    </select>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Child</th>
+                                <th>Activity</th>
+                                <th>Type</th>
+                                <th>Level</th>
+                                <th>Time</th>
+                                <th>Date</th>
+                                <th>Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for progress in progress_records %}
+                            <tr>
+                                <td>{{ progress.child.first_name }} {{ progress.child.last_name }}</td>
+                                <td>{{ progress.activity.title }}</td>
+                                <td>{{ progress.activity.get_activity_type_display }}</td>
+                                <td>{{ progress.difficulty_level }}</td>
+                                <td>{{ progress.completion_time|default:"-" }} min</td>
+                                <td>{{ progress.date|date:"M d, Y" }}</td>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" 
+                                             style="width: {% widthratio progress.difficulty_level 5 100 %}%"
+                                             aria-valuenow="{{ progress.difficulty_level }}" 
+                                             aria-valuemin="0" aria-valuemax="5">
+                                            Level {{ progress.difficulty_level }}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center">No progress records found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Activity Type Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="activityTypeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Progress Over Time</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="progressChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Filter functionality
+    document.getElementById('childFilter').addEventListener('change', function() {
+        // Add filter logic here
+    });
+
+    document.getElementById('activityTypeFilter').addEventListener('change', function() {
+        // Add filter logic here
+    });
+
+    // Activity Type Chart
+    const activityTypeCtx = document.getElementById('activityTypeChart').getContext('2d');
+    const activityTypeData = {
+        labels: JSON.parse('{{ activity_types|escapejs }}'),
+        datasets: [{
+            data: JSON.parse('{{ activity_type_counts|escapejs }}'),
+            backgroundColor: [
+                '#FF6384',
+                '#36A2EB',
+                '#FFCE56',
+                '#4BC0C0',
+                '#9966FF'
+            ]
+        }]
+    };
+    new Chart(activityTypeCtx, {
+        type: 'pie',
+        data: activityTypeData
+    });
+
+    // Progress Chart
+    const progressCtx = document.getElementById('progressChart').getContext('2d');
+    const progressData = {
+        labels: JSON.parse('{{ progress_dates|escapejs }}'),
+        datasets: [{
+            label: 'Average Difficulty Level',
+            data: JSON.parse('{{ average_levels|escapejs }}'),
+            borderColor: '#36A2EB',
+            tension: 0.1
+        }]
+    };
+    const progressOptions = {
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 5
+            }
+        }
+    };
+    new Chart(progressCtx, {
+        type: 'line',
+        data: progressData,
+        options: progressOptions
+    });
+</script>
+{% endblock %}
+{% endblock %} 

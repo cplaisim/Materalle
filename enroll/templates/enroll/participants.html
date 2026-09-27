@@ -1,0 +1,198 @@
+<div class="participants-container p-4">
+    <form method="POST">
+        {% csrf_token %}
+    </form>
+    <input type="hidden" value="{{ page }}" name="page" />
+    <input type="hidden" value="" name="entry_id" id="currentEntryId" />
+    <h2 class="mb-3">Participants</h2>
+    {% if students %}
+        <p class="text-muted mb-3">{{ students|length }} child{{ students|length|pluralize:"ren" }} enrolled</p>
+        <div class="row g-4">
+            {% for student in students %}
+                <div class="col-lg-4 col-md-6">
+                    <div class="card participant-card shadow-sm check-action-card"
+                         data-toggle="tooltip"
+                         title="{% if student.is_checked_in %}Click to check out{% else %}Click to check in{% endif %}">
+                        <div class="card-body">
+                            <input type="hidden" class="child-id" value="{{ student.child_id }}">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h5 class="card-title mb-0">
+                                        <a href="{% url 'enroll:child_dashboard' child_id=student.child_id %}" class="text-decoration-none child-name-link" style="color: var(--color-text); transition: color 0.2s;" onclick="event.stopPropagation();">{{ student.child_name }}</a>
+                                    </h5>
+                                    <p class="card-text text-muted small mb-0">DOB: {{ student.date_of_birth }}</p>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger delete-child-btn" data-child-id="{{ student.child_id }}" data-child-name="{{ student.child_name }}" title="Remove child" onclick="event.stopPropagation();">
+                                    &times;
+                                </button>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="attendance-status">
+                                    <span class="badge {% if student.is_checked_in %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {% if student.is_checked_in %}Present{% else %}Not Present{% endif %}
+                                    </span>
+                                </div>
+                                {% if student.is_checked_in %}
+                                    <button class="btn btn-sm btn-danger checkout-btn" data-child-id="{{ student.child_id }}">Check Out</button>
+                                {% else %}
+                                    <button class="btn btn-sm btn-success checkin-btn" data-child-id="{{ student.child_id }}">Check In</button>
+                                {% endif %}
+                            </div>
+
+                            <div class="btn-group btn-group-sm w-100" role="group" aria-label="Daily rating">
+                                <button type="button" class="btn btn-outline-secondary rate-btn" rate-value="dislike" aria-label="Not great" title="Not great day">😞</button>
+                                <button type="button" class="btn btn-outline-secondary rate-btn" rate-value="normal" aria-label="Neutral" title="Okay day">😐</button>
+                                <button type="button" class="btn btn-outline-secondary rate-btn" rate-value="like" aria-label="Great" title="Great day">😄</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted text-center py-4">No children enrolled yet.</p>
+    {% endif %}
+</div>
+
+<style>
+    .child-name-link:hover {
+        color: var(--color-sage) !important;
+        text-decoration: underline !important;
+    }
+</style>
+
+<script>
+    $(document).ready(function () {
+        $('[data-toggle="tooltip"]').tooltip();
+
+        $(".check-action-card").on("click", function() {
+            const cardBody = $(this).find(".card-body");
+            const childId = cardBody.find(".child-id").val();
+            const checkInBtn = cardBody.find(".checkin-btn");
+            const checkOutBtn = cardBody.find(".checkout-btn");
+            const action = checkInBtn.length > 0 ? 'in' : 'out';
+            const button = action === 'in' ? checkInBtn : checkOutBtn;
+            handleCheckInOut(childId, action, button);
+        });
+
+        $('.checkin-btn, .checkout-btn').click(function(e) {
+            e.stopPropagation();
+            var childId = $(this).data('child-id');
+            var action = $(this).hasClass('checkin-btn') ? 'in' : 'out';
+            handleCheckInOut(childId, action, $(this));
+        });
+
+        function handleCheckInOut(childId, action, button) {
+            $.ajax({
+                url: '/enroll/check-in-out/' + childId + '/' + action + '/',
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function(response) {
+                    if (response.success) {
+                        const card = button.closest('.check-action-card');
+                        const statusBadge = card.find('.attendance-status .badge');
+
+                        if (action === 'in') {
+                            button.removeClass('btn-success checkin-btn').addClass('btn-danger checkout-btn');
+                            button.text('Check Out');
+                            statusBadge.removeClass('bg-secondary').addClass('bg-success');
+                            statusBadge.text('Present');
+                            card.attr('title', 'Click to check out');
+                        } else {
+                            button.removeClass('btn-danger checkout-btn').addClass('btn-success checkin-btn');
+                            button.text('Check In');
+                            statusBadge.removeClass('bg-success').addClass('bg-secondary');
+                            statusBadge.text('Not Present');
+                            card.attr('title', 'Click to check in');
+                        }
+
+                        $('[data-toggle="tooltip"]').tooltip('dispose');
+                        $('[data-toggle="tooltip"]').tooltip();
+                    }
+                }
+            });
+        }
+
+        $(".delete-child-btn").on("click", function(e) {
+            e.stopPropagation();
+            var childId = $(this).data('child-id');
+            var childName = $(this).data('child-name');
+            var card = $(this).closest('.col-lg-4');
+
+            if (confirm('Remove ' + childName + ' from enrolled children?')) {
+                $.ajax({
+                    url: '/enroll/child/' + childId + '/delete/',
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            card.fadeOut(300, function() { $(this).remove(); });
+                        }
+                    },
+                    error: function() {
+                        alert('Failed to remove child. Please try again.');
+                    }
+                });
+            }
+        });
+
+        // Listen for entry_id from agent chat responses
+        document.addEventListener('agentEntry', function(e) {
+            if (e.detail && e.detail.entry_id) {
+                $('#currentEntryId').val(e.detail.entry_id);
+                // Highlight rating buttons to indicate a new activity is ready to rate
+                $('.rate-btn').addClass('btn-outline-primary').removeClass('btn-outline-secondary');
+                setTimeout(function() {
+                    $('.rate-btn').addClass('btn-outline-secondary').removeClass('btn-outline-primary');
+                }, 2000);
+            }
+        });
+
+        $(".rate-btn").on("dblclick", function () {
+            let rateValue = $(this).attr("rate-value");
+            let studentCard = $(this).closest(".card-body");
+            let studentId = studentCard.find(".child-id").val();
+            let page = $("input[name='page']").val();
+            let entryId = $("input[name='entry_id']").val();
+            let csrfToken = $("input[name='csrfmiddlewaretoken']").val();
+
+            if (!entryId) {
+                alert("No activity to rate yet. Send a chat message first.");
+                return;
+            }
+
+            $.ajax({
+                url: "{% url 'enroll:rate_student' %}",
+                type: "POST",
+                data: {
+                    "page": page,
+                    "child_id": studentId,
+                    "rate_value": rateValue,
+                    "object_id": entryId,
+                    "csrfmiddlewaretoken": csrfToken
+                },
+                success: function (response) {
+                    if (response.status === "success") {
+                        // Visual feedback: highlight the selected rating
+                        let btnGroup = studentCard.find('.rate-btn');
+                        btnGroup.removeClass('active btn-primary').addClass('btn-outline-secondary');
+                        let clicked = studentCard.find('.rate-btn[rate-value="' + rateValue + '"]');
+                        clicked.removeClass('btn-outline-secondary').addClass('active btn-primary');
+                    } else {
+                        alert("Error: " + response.message);
+                    }
+                },
+                error: function (xhr) {
+                    let msg = "Something went wrong. Please try again.";
+                    try { msg = JSON.parse(xhr.responseText).message || msg; } catch(e) {}
+                    alert(msg);
+                }
+            });
+        });
+    });
+</script>

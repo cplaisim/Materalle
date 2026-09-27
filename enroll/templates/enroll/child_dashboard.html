@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container-fluid">
+    <!-- Header with centered name and child cycling -->
+    <div class="text-center mb-4">
+        <div class="d-flex justify-content-center align-items-center gap-3 mb-1">
+            <a href="{% url 'enroll:child_dashboard' prev_child_id %}" class="btn btn-sm btn-outline-secondary" title="Previous child">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            <div>
+                <h2 class="mb-0">{{ child.child_name }}</h2>
+                <p class="text-muted mb-0 small">
+                    DOB: {{ child.date_of_birth }} &middot;
+                    {% if child.is_checked_in %}
+                        <span class="badge bg-success">Present</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Not Present</span>
+                    {% endif %}
+                    &middot; <span class="text-muted">{{ child_index }} / {{ child_total }}</span>
+                </p>
+            </div>
+            <a href="{% url 'enroll:child_dashboard' next_child_id %}" class="btn btn-sm btn-outline-secondary" title="Next child">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Satisfaction Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Sage (Nutrition) -->
+        <div class="col-md-4">
+            <a href="{% url 'enroll:child_agent_activities' child.child_id 'sage' %}" class="text-decoration-none">
+            <div class="card shadow-sm agent-card" style="border: none; border-radius: var(--radius-squircle); border-top: 4px solid var(--color-sage);">
+                <div class="card-body text-center">
+                    <h5 class="card-title" style="color: var(--color-sage);">Sage</h5>
+                    <p class="text-muted small mb-3">Nutrition & Meals</p>
+                    {% if sage.count > 0 %}
+                        <div class="d-flex justify-content-center gap-4 mb-3">
+                            <div>
+                                <span style="font-size: 1.8rem;">😄</span>
+                                <div class="fw-bold">{{ sage.likes }}</div>
+                            </div>
+                            <div>
+                                <span style="font-size: 1.8rem;">😐</span>
+                                <div class="fw-bold">{{ sage.normals }}</div>
+                            </div>
+                            <div>
+                                <span style="font-size: 1.8rem;">😞</span>
+                                <div class="fw-bold">{{ sage.dislikes }}</div>
+                            </div>
+                        </div>
+                        <div class="progress" style="height: 8px; border-radius: var(--radius-sm);">
+                            <div class="progress-bar" style="width: {% widthratio sage.likes sage.count 100 %}%; background-color: var(--color-success);"></div>
+                            <div class="progress-bar" style="width: {% widthratio sage.normals sage.count 100 %}%; background-color: var(--color-warning);"></div>
+                            <div class="progress-bar" style="width: {% widthratio sage.dislikes sage.count 100 %}%; background-color: var(--color-error);"></div>
+                        </div>
+                        <p class="text-muted small mt-2">{{ sage.count }} rating{{ sage.count|pluralize }}</p>
+                    {% else %}
+                        <p class="text-muted py-3">No ratings yet</p>
+                    {% endif %}
+                </div>
+            </div>
+            </a>
+        </div>
+
+        <!-- Grace (Social) -->
+        <div class="col-md-4">
+            <a href="{% url 'enroll:child_agent_activities' child.child_id 'grace' %}" class="text-decoration-none">
+            <div class="card shadow-sm agent-card" style="border: none; border-radius: var(--radius-squircle); border-top: 4px solid var(--color-grace);">
+                <div class="card-body text-center">
+                    <h5 class="card-title" style="color: var(--color-grace);">Grace</h5>
+                    <p class="text-muted small mb-3">Social & Activities</p>
+                    {% if grace.count > 0 %}
+                        <div class="d-flex justify-content-center gap-4 mb-3">
+                            <div>
+                                <span style="font-size: 1.8rem;">😄</span>
+                                <div class="fw-bold">{{ grace.likes }}</div>
+                            </div>
+                            <div>
+                                <span style="font-size: 1.8rem;">😐</span>
+                                <div class="fw-bold">{{ grace.normals }}</div>
+                            </div>
+                            <div>
+                                <span style="font-size: 1.8rem;">😞</span>
+                                <div class="fw-bold">{{ grace.dislikes }}</div>
+                            </div>
+                        </div>
+                        <div class="progress" style="height: 8px; border-radius: var(--radius-sm);">
+                            <div class="progress-bar" style="width: {% widthratio grace.likes grace.count 100 %}%; background-color: var(--color-success);"></div>
+                            <div class="progress-bar" style="width: {% widthratio grace.normals grace.count 100 %}%; background-color: var(--color-warning);"></div>
+                            <div class="progress-bar" style="width: {% widthratio grace.dislikes grace.count 100 %}%; background-color: var(--color-error);"></div>
+                        </div>
+                        <p class="text-muted small mt-2">{{ grace.count }} rating{{ grace.count|pluralize }}</p>
+                    {% else %}
+                        <p class="text-muted py-3">No ratings yet</p>
+                    {% endif %}
+                </div>
+            </div>
+            </a>
+        </div>
+
+        <!-- Patience (Motor/Physical) -->
+        <div class="col-md-4">
+            <a href="{% url 'enroll:child_agent_activities' child.child_id 'patience' %}" class="text-decoration-none">
+            <div class="card shadow-sm agent-card" style="border: none; border-radius: var(--radius-squircle); border-top: 4px solid var(--color-patience);">
+                <div class="card-body text-center">
+                    <h5 class="card-title" style="color: var(--color-patience);">Patience</h5>
+                    <p class="text-muted small mb-3">Motor & Physical</p>
+                    {% if patience.count > 0 %}
+                        <div class="d-flex justify-content-center gap-4 mb-3">
+                            <div>
+                                <span style="font-size: 1.8rem;">😄</span>
+                                <div class="fw-bold">{{ patience.likes }}</div>
+                            </div>
+                            <div>
+                                <span style="font-size: 1.8rem;">😐</span>
+                                <div class="fw-bold">{{ patience.normals }}</div>
+                            </div>
+                            <div>
+                                <span style="font-size: 1.8rem;">😞</span>
+                                <div class="fw-bold">{{ patience.dislikes }}</div>
+                            </div>
+                        </div>
+                        <div class="progress" style="height: 8px; border-radius: var(--radius-sm);">
+                            <div class="progress-bar" style="width: {% widthratio patience.likes patience.count 100 %}%; background-color: var(--color-success);"></div>
+                            <div class="progress-bar" style="width: {% widthratio patience.normals patience.count 100 %}%; background-color: var(--color-warning);"></div>
+                            <div class="progress-bar" style="width: {% widthratio patience.dislikes patience.count 100 %}%; background-color: var(--color-error);"></div>
+                        </div>
+                        <p class="text-muted small mt-2">{{ patience.count }} rating{{ patience.count|pluralize }}</p>
+                    {% else %}
+                        <p class="text-muted py-3">No ratings yet</p>
+                    {% endif %}
+                </div>
+            </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Developmental Summary -->
+    <div class="row g-3 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm" style="border: none; border-radius: var(--radius-squircle);">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background-color: var(--color-cream); border-bottom: 1px solid var(--color-warm-border); border-radius: var(--radius-squircle) var(--radius-squircle) 0 0;">
+                    <h5 class="card-title mb-0">Developmental Summary</h5>
+                    <button class="btn btn-sm btn-primary" id="generateSummaryBtn">
+                        <i class="fas fa-brain me-1"></i>Generate Report
+                    </button>
+                </div>
+                <div class="card-body" id="summaryBody">
+                    <p class="text-muted mb-0">Click <strong>Generate Report</strong> to create a developmental milestone summary based on {{ child.child_name }}'s activity ratings. This report is designed to share with a pediatrician at checkups.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Attendance + Info -->
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div class="card shadow-sm" style="border: none; border-radius: var(--radius-squircle);">
+                <div class="card-header" style="background-color: var(--color-cream); border-bottom: 1px solid var(--color-warm-border); border-radius: var(--radius-squircle) var(--radius-squircle) 0 0;">
+                    <h5 class="card-title mb-0">Recent Attendance</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_logs %}
+                    <div class="list-group list-group-flush">
+                        {% for log in recent_logs %}
+                        <div class="list-group-item py-2 px-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>{{ log.check_in|date:"M d, Y" }}</span>
+                                <div>
+                                    <span class="text-muted small">In: {{ log.check_in|time:"g:i A" }}</span>
+                                    {% if log.check_out %}
+                                        <span class="text-muted small ms-2">Out: {{ log.check_out|time:"g:i A" }}</span>
+                                    {% else %}
+                                        <span class="badge bg-success ms-2">Still here</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <p class="mb-0">No attendance records yet.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm" style="border: none; border-radius: var(--radius-squircle);">
+                <div class="card-header" style="background-color: var(--color-cream); border-bottom: 1px solid var(--color-warm-border); border-radius: var(--radius-squircle) var(--radius-squircle) 0 0;">
+                    <h5 class="card-title mb-0">Info</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <span class="text-muted small">Total Ratings</span>
+                        <h4>{{ total_ratings }}</h4>
+                    </div>
+                    <div class="mb-3">
+                        <span class="text-muted small">Parent</span>
+                        <p class="mb-0 fw-bold">{{ child.parent_name }}</p>
+                        <p class="text-muted small mb-0">{{ child.parent_phone }}</p>
+                    </div>
+                    <div>
+                        <span class="text-muted small">Allergies</span>
+                        <p class="mb-0">{{ child.child_allergies|default:"None reported" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const summaryBtn = document.getElementById('generateSummaryBtn');
+    const summaryBody = document.getElementById('summaryBody');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+        || document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    summaryBtn.addEventListener('click', async function() {
+        summaryBtn.disabled = true;
+        summaryBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating...';
+        summaryBody.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i><p class="text-muted mt-2 small">Analyzing activities and generating developmental summary...</p></div>';
+
+        try {
+            const resp = await fetch('{% url "enroll:generate_child_summary" child.child_id %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({}),
+                credentials: 'same-origin',
+            });
+            const data = await resp.json();
+            if (data.success) {
+                // Convert markdown-like formatting to HTML
+                let html = data.summary
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/\n- /g, '<br>&bull; ')
+                    .replace(/\n(\d+)\. /g, '<br>$1. ')
+                    .replace(/\n/g, '<br>');
+                summaryBody.innerHTML = '<div class="summary-content"><p>' + html + '</p></div>'
+                    + '<div class="mt-3 d-flex gap-2">'
+                    + '<button class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="fas fa-print me-1"></i>Print</button>'
+                    + '<button class="btn btn-sm btn-outline-primary" id="regenerateSummaryBtn"><i class="fas fa-sync-alt me-1"></i>Regenerate</button>'
+                    + '</div>';
+                document.getElementById('regenerateSummaryBtn').addEventListener('click', function() {
+                    summaryBtn.click();
+                });
+            } else {
+                summaryBody.innerHTML = '<div class="alert alert-danger mb-0">' + (data.error || 'Failed to generate summary') + '</div>';
+            }
+        } catch (err) {
+            summaryBody.innerHTML = '<div class="alert alert-danger mb-0">Error: ' + err.message + '</div>';
+        } finally {
+            summaryBtn.disabled = false;
+            summaryBtn.innerHTML = '<i class="fas fa-brain me-1"></i>Generate Report';
+        }
+    });
+});
+</script>
+
+<style>
+.agent-card {
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.agent-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.12) !important;
+}
+.summary-content {
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+.summary-content strong {
+    color: #333;
+}
+@media print {
+    .btn, .card-header button, a[href] {
+        display: none !important;
+    }
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+}
+</style>
+{% endblock %}

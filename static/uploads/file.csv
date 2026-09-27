@@ -1,0 +1,101 @@
+"Transaction Type","Date","Account Type","Description","Amount","Reference No.","Credits","Debits"
+DEBIT,4/8/25,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+CHECK,4/8/25,Checking,"",-3984.06,227,,$3984.06
+CHECK,4/7/25,Checking,"",-350.00,228,,$350.00
+OTHER,4/2/25,Checking,"Zelle HAPPY CATERPILL 8006566561                            ZELLE CREDIT",6500.00," ",$6500.00,
+DEBIT,4/1/25,Checking,"CITIZENS         MTG PMT",-3900.00," ",,$3900.00
+CHECK,3/26/25,Checking,"",-2500.00,230,,$2500.00
+OTHER,3/13/25,Checking,"",0.36," ",$0.36,
+DIRECT DEPOSIT,3/13/25,Checking,"JPMorgan Chase   Ext Trnsfr",6500.00," ",$6500.00,
+DEBIT,3/6/25,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+DEBIT,3/5/25,Checking,"CHASBK CK WEBXFR ETRANSFER",-8000.00," ",,$8000.00
+DEBIT,3/3/25,Checking,"CITIZENS         MTG PMT",-3900.00," ",,$3900.00
+CHECK,2/25/25,Checking,"",-3062.23,229,,$3062.23
+OTHER,2/13/25,Checking,"",0.53," ",$0.53,
+DEBIT,2/6/25,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+DEBIT,2/3/25,Checking,"CITIZENS         MTG PMT",-3900.00," ",,$3900.00
+OTHER,1/14/25,Checking,"",0.63," ",$0.63,
+OTHER,1/14/25,Checking,"RealTime Credit                                             SENDER REF: 23382992658",3000.00," ",$3000.00,
+DEBIT,1/8/25,Checking,"Wise Inc         WISE",-11010.00," ",,$11010.00
+DEBIT,1/7/25,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+OTHER,1/6/25,Checking,"Zelle MICHELE PLAISIMON 8006566561                          ZELLE CREDIT",2000.00," ",$2000.00,
+OTHER,1/6/25,Checking,"Zelle HAPPY CATERPILL 8006566561                            ZELLE CREDIT",7500.00," ",$7500.00,
+DEBIT,1/2/25,Checking,"CITIZENS         MTG PMT",-3900.00," ",,$3900.00
+OTHER,1/2/25,Checking,"Zelle MICHELE PLAISIMON 8006566561                          ZELLE CREDIT",2000.00," ",$2000.00,
+OTHER,12/31/24,Checking,"Zelle MICHELE PLAISIMON 8006566561                          ZELLE CREDIT",2000.00," ",$2000.00,
+OTHER,12/30/24,Checking,"Zelle MICHELE PLAISIMON 8006566561                          ZELLE CREDIT",2000.00," ",$2000.00,
+OTHER,12/27/24,Checking,"Zelle MICHELE PLAISIMON 8006566561                          ZELLE CREDIT",10.00," ",$10.00,
+DEBIT,12/24/24,Checking,"CHASBK CK WEBXFR ETRANSFER",-8000.00," ",,$8000.00
+OTHER,12/12/24,Checking,"",0.85," ",$0.85,
+DEBIT,12/6/24,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+OTHER,12/5/24,Checking,"Zelle HAPPY CATERPILL 8006566561                            ZELLE CREDIT",6500.00," ",$6500.00,
+DEBIT,12/2/24,Checking,"CITIZENS         MTG PMT",-3900.00," ",,$3900.00
+OTHER,11/14/24,Checking,"",0.97," ",$0.97,
+DEBIT,11/6/24,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+OTHER,11/4/24,Checking,"Zelle HAPPY CATERPILL 8006566561                            ZELLE CREDIT",6500.00," ",$6500.00,
+DEBIT,11/1/24,Checking,"CITIZENS         MTG PMT",-3900.00," ",,$3900.00
+OTHER,10/11/24,Checking,"",0.74," ",$0.74,
+DEBIT,10/8/24,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+OTHER,10/7/24,Checking,"Zelle HAPPY CATERPILL 8006566561                            ZELLE CREDIT",6500.00," ",$6500.00,
+DEBIT,10/1/24,Checking,"CITIZENS         MTG PMT",-3900.00," ",,$3900.00
+OTHER,9/13/24,Checking,"",1.06," ",$1.06,
+CHECK,9/13/24,Checking,"",-13732.23,119,,$13732.23
+OTHER,9/9/24,Checking,"Zelle HAPPY CATERPILL 8006566561                            ZELLE CREDIT",5000.00," ",$5000.00,
+DEBIT,9/6/24,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+DEBIT,9/3/24,Checking,"CITIZENS         MTG PMT",-3900.00," ",,$3900.00
+OTHER,9/3/24,Checking,"Zelle HAPPY CATERPILL 8006566561                            ZELLE CREDIT",4000.00," ",$4000.00,
+OTHER,8/13/24,Checking,"",0.99," ",$0.99,
+OTHER,8/9/24,Checking,"Zelle HAPPY CATERPILL 8006566561                            ZELLE CREDIT",1000.00," ",$1000.00,
+DEBIT,8/6/24,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+OTHER,8/5/24,Checking,"Zelle HAPPY CATERPILL 8006566561                            ZELLE CREDIT",1000.00," ",$1000.00,
+OTHER,8/5/24,Checking,"Zelle HAPPY CATERPILL 8006566561                            ZELLE CREDIT",1000.00," ",$1000.00,
+OTHER,8/5/24,Checking,"RealTime Credit                                             SENDER REF: 21615642246",4000.00," ",$4000.00,
+DEBIT,8/1/24,Checking,"CITIZENS         MTG PMT",-3900.00," ",,$3900.00
+OTHER,7/17/24,Checking,"RealTime Credit                                             SENDER REF: 21435229181",3500.00," ",$3500.00,
+DIRECT DEPOSIT,7/17/24,Checking,"JPMorgan Chase   Ext Trnsfr",8000.00," ",$8000.00,
+OTHER,7/12/24,Checking,"",1.01," ",$1.01,
+DEBIT,7/8/24,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+DEBIT,7/1/24,Checking,"CITIZENS         MTG PMT",-3900.00," ",,$3900.00
+OTHER,6/13/24,Checking,"",1.07," ",$1.07,
+CHECK,6/13/24,Checking,"",-3026.02,118,,$3026.02
+DIRECT DEPOSIT,6/13/24,Checking,"Wise Inc         MARIA PLA",4812.64," ",$4812.64,
+DEBIT,6/12/24,Checking,"BRAUNS INTERNATI SALE",-10654.00," ",,$10654.00
+DIRECT DEPOSIT,6/12/24,Checking,"Wise Inc         MARIA PLA",9500.00," ",$9500.00,
+DIRECT DEPOSIT,6/7/24,Checking,"Wise Inc         MARIA PLA",9500.00," ",$9500.00,
+DEBIT,6/6/24,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+OTHER,6/5/24,Checking,"RealTime Credit                                             SENDER REF: 21005922451",3000.00," ",$3000.00,
+DEBIT,6/3/24,Checking,"CITIZENS         MTG PMT",-4500.00," ",,$4500.00
+DEBIT,5/16/24,Checking,"CHASBK CK WEBXFR ETRANSFER",-2500.00," ",,$2500.00
+OTHER,5/13/24,Checking,"",1.28," ",$1.28,
+DEBIT,5/7/24,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+DEBIT,5/1/24,Checking,"CITIZENS         MTG PMT",-4500.00," ",,$4500.00
+OTHER,4/11/24,Checking,"",1.30," ",$1.30,
+DEBIT,4/8/24,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+CHECK,4/8/24,Checking,"",-3887.97,117,,$3887.97
+DEBIT,4/1/24,Checking,"CITIZENS         MTG PMT",-4500.00," ",,$4500.00
+DEPOSIT,3/29/24,Checking,"",8000.00,35474139,$8000.00,
+OTHER,3/13/24,Checking,"",1.36," ",$1.36,
+DEBIT,3/6/24,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+DEBIT,3/1/24,Checking,"CITIZENS         MTG PMT",-4500.00," ",,$4500.00
+DIRECT DEPOSIT,2/29/24,Checking,"Wise Inc         WISE",7535.81," ",$7535.81,
+CHECK,2/23/24,Checking,"",-3026.03,116,,$3026.03
+DEBIT,2/23/24,Checking,"CHASBK CK WEBXFR ETRANSFER",-7000.00," ",,$7000.00
+OTHER,2/13/24,Checking,"",1.40," ",$1.40,
+DEPOSIT,2/9/24,Checking,"",8000.00,35474139,$8000.00,
+DEBIT,2/6/24,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+DEBIT,2/1/24,Checking,"CITIZENS         MTG PMT",-4500.00," ",,$4500.00
+DEPOSIT,1/26/24,Checking,"",8000.00,35474139,$8000.00,
+OTHER,1/24/24,Checking,"RealTime Credit                                             SENDER REF: 798021368-MANON MARI",114.61," ",$114.61,
+DEBIT,1/23/24,Checking,"GreenSky         WEB PAY",-1000.00," ",,$1000.00
+DEBIT,1/22/24,Checking,"CITIZENS         MTG PMT",-2000.00," ",,$2000.00
+OTHER,1/12/24,Checking,"",1.41," ",$1.41,
+DEBIT,1/8/24,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+CHECK,1/3/24,Checking,"",-6609.91,115,,$6609.91
+DEBIT,1/2/24,Checking,"CITIZENS         MTG PMT",-4500.00," ",,$4500.00
+DIRECT DEPOSIT,1/2/24,Checking,"Wise Inc         WISE",7710.52," ",$7710.52,
+OTHER,12/13/23,Checking,"",1.43," ",$1.43,
+DEBIT,12/11/23,Checking,"GreenSky         WEB PAY",-800.00," ",,$800.00
+DEBIT,12/6/23,Checking,"GreenSky         WEB PAY",-500.00," ",,$500.00
+DEBIT,12/1/23,Checking,"CITIZENS         MTG PMT",-4500.00," ",,$4500.00
+DIRECT DEPOSIT,12/1/23,Checking,"Wise Inc         WISE",7500.00," ",$7500.00,
+OTHER,11/13/23,Checking,"",1.40," ",$1.40,

@@ -1,0 +1,88 @@
+{% extends 'grace/base_grace.html' %}
+{% load static %}
+
+{% block grace_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">{{ activity.title }}</h5>
+            </div>
+            {% if activity.picture %}
+            <img src="{{ activity.picture.url }}" class="card-img-top" alt="{{ activity.title }}">
+            {% endif %}
+            <div class="card-body">
+                <h6 class="text-muted">{{ activity.get_activity_type_display }}</h6>
+                <p>{{ activity.description }}</p>
+                <h6>Social Skills Focus:</h6>
+                <p>{{ activity.social_skills_focus }}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-primary">Average Rating: {{ activity.average_rating|floatformat:1 }}/5</span>
+                    <small class="text-muted">Created by: {{ activity.created_by.username }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rating Form -->
+        {% if user.is_teacher or user.is_parent %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Rate this Activity</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="child_id" class="form-label">Child</label>
+                        <select class="form-select" id="child_id" name="child_id" required>
+                            {% for child in user.children.all %}
+                            <option value="{{ child.id }}">{{ child.first_name }} {{ child.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="rating" class="form-label">Rating</label>
+                        <select class="form-select" id="rating" name="rating" required>
+                            <option value="5">5 - Excellent</option>
+                            <option value="4">4 - Very Good</option>
+                            <option value="3">3 - Good</option>
+                            <option value="2">2 - Fair</option>
+                            <option value="1">1 - Poor</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit Rating</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Activity Ratings</h5>
+            </div>
+            <div class="card-body">
+                {% for rating in ratings %}
+                <div class="mb-3 border-bottom pb-2">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ rating.child.first_name }}</strong>
+                        <span class="badge bg-primary">{{ rating.rating }}/5</span>
+                    </div>
+                    {% if rating.notes %}
+                    <p class="small text-muted mb-0">{{ rating.notes }}</p>
+                    {% endif %}
+                    <small class="text-muted">{{ rating.date|date:"M d, Y" }}</small>
+                </div>
+                {% empty %}
+                <p>No ratings yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

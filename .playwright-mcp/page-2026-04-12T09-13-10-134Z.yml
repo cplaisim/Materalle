@@ -1,0 +1,62 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e15]
+  - navigation [ref=e16]:
+    - link "Happy Caterpillars" [ref=e17] [cursor=pointer]:
+      - /url: /
+    - list [ref=e18]:
+      - listitem [ref=e19]:
+        - link "Dashboard" [ref=e20] [cursor=pointer]:
+          - /url: /dashboard/
+      - listitem [ref=e21]:
+        - link "Grace" [ref=e22] [cursor=pointer]:
+          - /url: /grace/
+      - listitem [ref=e23]:
+        - link "Patience" [ref=e24] [cursor=pointer]:
+          - /url: /patience/
+      - listitem [ref=e25]:
+        - button "Sage ▾" [ref=e26] [cursor=pointer]
+    - generic [ref=e27]:
+      - generic [ref=e28]: Apr 6 – Apr 10
+      - generic "LLM backend (stored locally)" [ref=e29]:
+        - generic [ref=e30]: Ollama
+        - checkbox [checked] [ref=e32] [cursor=pointer]
+      - button "Signed in as testadmin ▾" [ref=e35] [cursor=pointer]:
+        - text: Signed in as
+        - strong [ref=e36]: testadmin
+        - text: ▾
+  - generic [ref=e37]:
+    - generic [ref=e38]:
+      - heading "Welcome back, testadmin!" [level=1] [ref=e39]
+      - paragraph [ref=e40]: Choose one of our assistants to help with your childcare needs today.
+      - button "Check Attendance" [ref=e42] [cursor=pointer]
+    - generic [ref=e43]:
+      - generic [ref=e44] [cursor=pointer]:
+        - generic [ref=e45]: GRACE
+        - generic [ref=e46]:
+          - heading "Social & Emotional Learning" [level=3] [ref=e47]
+          - list [ref=e48]:
+            - listitem [ref=e49]: "- Reading, music & language development"
+            - listitem [ref=e50]: "- Emotional intelligence activities"
+            - listitem [ref=e51]: "- Communication skill building"
+            - listitem [ref=e52]: "- Social development tracking"
+          - button "Open Grace" [ref=e53]
+      - generic [ref=e54] [cursor=pointer]:
+        - generic [ref=e55]: PATIENCE
+        - generic [ref=e56]:
+          - heading "Physical Development" [level=3] [ref=e57]
+          - list [ref=e58]:
+            - listitem [ref=e59]: "- Age-appropriate motor activities"
+            - listitem [ref=e60]: "- Physical milestone tracking"
+            - listitem [ref=e61]: "- Coordination & balance exercises"
+            - listitem [ref=e62]: "- Movement & play suggestions"
+          - button "Open Patience" [ref=e63]
+      - generic [ref=e64] [cursor=pointer]:
+        - generic [ref=e65]: SAGE
+        - generic [ref=e66]:
+          - heading "Health & Nutrition" [level=3] [ref=e67]
+          - list [ref=e68]:
+            - listitem [ref=e69]: "- Meal planning & nutrition"
+            - listitem [ref=e70]: "- Health check reminders"
+            - listitem [ref=e71]: "- Menu generation (CACFP)"
+            - listitem [ref=e72]: "- Document management"
+          - button "Open Sage" [ref=e73]

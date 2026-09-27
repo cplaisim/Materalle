@@ -1,0 +1,94 @@
+{% extends 'patience/base_patience.html' %}
+{% load static %}
+
+{% block patience_content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">{{ activity.title }}</h5>
+            </div>
+            {% if activity.picture %}
+            <img src="{{ activity.picture.url }}" class="card-img-top" alt="{{ activity.title }}">
+            {% endif %}
+            <div class="card-body">
+                <h6 class="text-muted">{{ activity.get_activity_type_display }}</h6>
+                <p>{{ activity.description }}</p>
+                <div class="alert alert-info">
+                    <h6 class="mb-2">Required Equipment:</h6>
+                    <p class="mb-0">{{ activity.equipment_needed }}</p>
+                </div>
+                <div class="alert alert-warning">
+                    <h6 class="mb-2">Safety Guidelines:</h6>
+                    <p class="mb-0">{{ activity.safety_guidelines }}</p>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-primary">Average Rating: {{ activity.average_rating|floatformat:1 }}/5</span>
+                    <small class="text-muted">Created by: {{ activity.created_by.username }}</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Recording Form -->
+        {% if user.is_teacher %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Record Child's Progress</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'patience:record_progress' activity.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="child_id" class="form-label">Child</label>
+                        <select class="form-select" id="child_id" name="child_id" required>
+                            {% for child in checked_in_children %}
+                            <option value="{{ child.id }}">{{ child.first_name }} {{ child.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="difficulty_level" class="form-label">Difficulty Level Achieved</label>
+                        <select class="form-select" id="difficulty_level" name="difficulty_level" required>
+                            <option value="1">Level 1 - Beginning</option>
+                            <option value="2">Level 2 - Developing</option>
+                            <option value="3">Level 3 - Progressing</option>
+                            <option value="4">Level 4 - Proficient</option>
+                            <option value="5">Level 5 - Advanced</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="completion_time" class="form-label">Completion Time (minutes)</label>
+                        <input type="number" class="form-control" id="completion_time" name="completion_time">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Record Progress</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Progress History</h5>
+            </div>
+            <div class="card-body">
+                {% for progress in progress_history %}
+                <div class="mb-3 border-bottom pb-2">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ progress.child.first_name }}</strong>
+                        <span class="badge bg-success">Level {{ progress.difficulty_level }}</span>
+                    </div>
+                    {% if progress.completion_time %}
+                    <p class="small text-muted mb-0">Time: {{ progress.completion_time }} minutes</p>
+                    {% endif %}
+                    <small class="text-muted">{{ progress.date|date:"M d, Y" }}</small>
+                </div>
+                {% empty %}
+                <p>No progress recorded yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

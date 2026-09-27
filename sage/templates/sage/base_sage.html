@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="display-4">Sage - Regulatory Compliance</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="list-group">
+            <a href="{% url 'sage:sage_dashboard' %}" class="list-group-item list-group-item-action">Dashboard</a>
+            <a href="{% url 'sage:attendance' %}" class="list-group-item list-group-item-action">Attendance</a>
+            <a href="{% url 'sage:meal_planner' %}" class="list-group-item list-group-item-action">Meal Planner</a>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        {% block sage_content %}
+        {% endblock %}
+    </div>
+</div>
+{% endblock %} 

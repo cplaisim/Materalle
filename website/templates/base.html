@@ -1,0 +1,76 @@
+{% load static %}
+
+<link rel="stylesheet" href="{% static 'materalleapp/css/style.css' %}">
+
+<!DOCTYPE html>
+<html>
+<head>
+        <!-- Required meta tags --> 
+        <meta charset="utf-8">  
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        {% csrf_token %}
+        <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Happy Caterpillars</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+   
+    <!-- Custom CSS -->
+    <script src="https://code.jquery.com/jquery-3.6.1.js"></script>
+</head>
+<body>
+    {% include 'navbar.html'%}
+    <div class="container">
+        <br/>
+        {% block content %}
+
+        {% endblock %}
+        <br/>
+    {% include 'footer.html' %}
+    </div>  
+</body>
+
+</html>
+<!-- Bootstrap JS and dependencies -->
+<!-- <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script> -->
+
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<!-- CSRF Token handling for AJAX requests -->
+<script>
+// Function to get CSRF token from cookie
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Set up CSRF token for AJAX requests
+document.addEventListener('DOMContentLoaded', function() {
+    const csrftoken = getCookie('csrftoken');
+    console.log('CSRF Token:', csrftoken); // Debug output to check if token exists
+    
+    // Add CSRF token to all AJAX requests
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!(/^(GET|HEAD|OPTIONS|TRACE)$/.test(settings.type)) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+});
+</script>
+
+<!-- Load custom CSRF debugging script -->
+<script src="{% static 'js/csrf.js' %}"></script>

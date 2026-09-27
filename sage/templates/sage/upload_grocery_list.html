@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Parsed Grocery List</h2>
+    
+    {% if categorized_items %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Item Name</th>
+                    <th>Quantity</th>
+                    <th>Unit</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category, items in categorized_items.items %}
+                    {% for item in items %}
+                        <tr>
+                            <td>{{ category }}</td>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.quantity|default:'-' }}</td>
+                            <td>{{ item.unit|default:'-' }}</td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No items have been parsed yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

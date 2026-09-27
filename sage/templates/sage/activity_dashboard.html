@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container-fluid" style="max-width: 900px; margin: 1rem auto; padding: 1.5rem;">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">Activity Dashboard</h2>
+            <p class="text-muted mb-0">{{ week_start|date:"M d" }} – {{ week_end|date:"M d, Y" }} &middot; {{ checked_in_count }} child{{ checked_in_count|pluralize:"ren" }} checked in</p>
+        </div>
+        <a href="{% url 'sage:weekly_schedule' %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-calendar-week me-1"></i>Weekly Overview
+        </a>
+    </div>
+
+    <!-- Day Navigation Tabs -->
+    <div class="d-flex align-items-center gap-2 mb-4">
+        {% if day_offset > 0 %}
+        <a href="?day={{ day_offset|add:"-1" }}" class="btn btn-sm btn-outline-secondary" title="Previous day">&larr;</a>
+        {% else %}
+        <button class="btn btn-sm btn-outline-secondary" disabled>&larr;</button>
+        {% endif %}
+
+        <div class="d-flex gap-1 flex-grow-1 justify-content-center">
+            {% for tab in day_tabs %}
+            <a href="?day={{ tab.offset }}"
+               class="btn btn-sm {% if tab.is_active %}btn-dark{% elif tab.is_today %}btn-outline-primary{% else %}btn-outline-secondary{% endif %}"
+               style="min-width: 90px; position: relative;">
+                {{ tab.short }}
+                <span class="d-block" style="font-size: 0.65rem; opacity: 0.7;">{{ tab.date|date:"M d" }}</span>
+                {% if tab.is_today and not tab.is_active %}
+                <span style="position:absolute;top:2px;right:4px;width:6px;height:6px;background:#0d6efd;border-radius:50%;"></span>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+
+        {% if day_offset < 4 %}
+        <a href="?day={{ day_offset|add:"1" }}" class="btn btn-sm btn-outline-secondary" title="Next day">&rarr;</a>
+        {% else %}
+        <button class="btn btn-sm btn-outline-secondary" disabled>&rarr;</button>
+        {% endif %}
+    </div>
+
+    {% if has_schedule %}
+    <!-- Activity Carousel (one at a time) -->
+    <div class="card shadow-sm mb-4" style="border: none; border-radius: 12px;">
+        <!-- Activity navigation header -->
+        <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #faf8f5; border-bottom: 1px solid #e8e0d8; border-radius: 12px 12px 0 0;">
+            <button class="btn btn-sm btn-outline-secondary" id="prevActivity"><i class="fas fa-chevron-left"></i></button>
+            <div class="text-center">
+                <span class="fw-bold" id="activityCounter">1 / {{ all_activities|length }}</span>
+                <div class="text-muted small" id="activityTime"></div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" id="nextActivity"><i class="fas fa-chevron-right"></i></button>
+        </div>
+
+        <!-- Activity slides -->
+        <div class="card-body" id="activityCarousel">
+            {% for act in all_activities %}
+            <div class="activity-slide {% if not forloop.first %}d-none{% endif %}" data-index="{{ forloop.counter0 }}" data-entry-id="{{ act.id }}">
+                <!-- Agent badge + time -->
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span class="badge agent-badge-{{ act.agent }}" style="font-size:0.7rem;">{{ act.agent|title }}</span>
+                    <span class="text-muted small">{{ act.start_time|time:"g:i A" }}</span>
+                    {% if act.activity_type %}
+                    <span class="badge {% if act.activity_type == 'MEAL' %}bg-success text-white{% else %}bg-light text-dark{% endif %}" style="font-size: 0.65rem;">{{ act.activity_type }}</span>
+                    {% endif %}
+                </div>
+
+                <!-- Title & Description -->
+                <h4 class="mb-2">{{ act.title }}</h4>
+                {% if act.description %}
+                <p class="text-muted mb-0" style="font-size:0.9rem;">{{ act.description }}</p>
+                {% else %}
+                <p class="text-muted mb-0 fst-italic" style="font-size:0.9rem;">No description available.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Checked-in Children with Ratings -->
+    <div class="card shadow-sm" style="border: none; border-radius: 12px;">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #faf8f5; border-bottom: 1px solid #e8e0d8; border-radius: 12px 12px 0 0;">
+            <h5 class="card-title mb-0"><i class="fas fa-child me-1"></i>Participants</h5>
+            <div class="d-flex gap-2 align-items-center">
+                <span class="badge bg-secondary">{{ checked_in_count }} checked in</span>
+                <button class="btn btn-sm btn-outline-primary" id="saveAllRatingsBtn" style="display:none;">
+                    <i class="fas fa-check me-1"></i>Save All
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0" id="childRatingsContainer">
+            {% if children %}
+            <form method="POST" style="display:none;">{% csrf_token %}</form>
+            {% for child in children %}
+            <div class="child-rating-row d-flex align-items-center justify-content-between px-3 py-2 {% if not forloop.last %}border-bottom{% endif %}"
+                 data-child-id="{{ child.child_id }}">
+                <div>
+                    <a href="{% url 'enroll:child_dashboard' child_id=child.child_id %}" class="fw-semibold text-decoration-none" style="color:#333;">{{ child.child_name }}</a>
+                    <span class="badge bg-success ms-1" style="font-size:0.6rem;">Present</span>
+                </div>
+                <div class="d-flex gap-1">
+                    <button class="rate-btn" data-child="{{ child.child_id }}" data-rating="3" title="Like"><span style="font-size:1.3rem;">😄</span></button>
+                    <button class="rate-btn" data-child="{{ child.child_id }}" data-rating="2" title="Okay"><span style="font-size:1.3rem;">😐</span></button>
+                    <button class="rate-btn" data-child="{{ child.child_id }}" data-rating="1" title="Dislike"><span style="font-size:1.3rem;">😞</span></button>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="text-center text-muted py-4">No children checked in.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% else %}
+    <div class="card shadow-sm" style="border: none; border-radius: 12px;">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-calendar-day fa-3x text-muted mb-3"></i>
+            <p class="text-muted mb-1">No activities scheduled for {{ selected_date|date:"l, M d" }}.</p>
+            <p class="small text-muted">Generate a <a href="{% url 'sage:weekly_schedule' %}">weekly schedule</a> to see activities here.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div id="dashStatus" style="position:fixed;bottom:20px;right:20px;z-index:1050;"></div>
+
+<style>
+.agent-badge-grace { background: #d63384; color: #fff; }
+.agent-badge-patience { background: #0d6efd; color: #fff; }
+.agent-badge-sage { background: #198754; color: #fff; }
+.rate-btn {
+    border: none;
+    background: none;
+    opacity: 0.4;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 6px;
+    transition: opacity 0.15s, transform 0.15s, background-color 0.15s;
+}
+.rate-btn:hover {
+    opacity: 0.8;
+    transform: scale(1.15);
+}
+.rate-btn.selected {
+    opacity: 1;
+    background-color: #f0ece8;
+}
+.child-rating-row {
+    transition: background-color 0.15s;
+}
+.child-rating-row:hover {
+    background-color: #faf8f5;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+        || document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+    function showStatus(msg, type) {
+        const el = document.getElementById('dashStatus');
+        el.innerHTML = `<div class="alert alert-${type} py-1 px-3 small shadow">${msg}</div>`;
+        setTimeout(() => el.innerHTML = '', 2500);
+    }
+
+    // Pre-built ratings map
+    const ratingsMap = {};
+    {% for act in all_activities %}
+    ratingsMap['{{ act.id }}'] = JSON.parse('{{ act.child_ratings_json|escapejs }}');
+    {% endfor %}
+
+    // --- Activity carousel ---
+    const slides = document.querySelectorAll('.activity-slide');
+    const counterEl = document.getElementById('activityCounter');
+    const timeEl = document.getElementById('activityTime');
+    let currentIdx = 0;
+    const total = slides.length;
+
+    function showActivity(idx) {
+        slides.forEach(s => s.classList.add('d-none'));
+        if (slides[idx]) {
+            slides[idx].classList.remove('d-none');
+            currentIdx = idx;
+            counterEl.textContent = (idx + 1) + ' / ' + total;
+            // Update child rating highlights for this activity
+            updateChildRatings();
+        }
+    }
+
+    document.getElementById('prevActivity')?.addEventListener('click', () => {
+        showActivity((currentIdx - 1 + total) % total);
+    });
+    document.getElementById('nextActivity')?.addEventListener('click', () => {
+        showActivity((currentIdx + 1) % total);
+    });
+
+    // --- Child ratings ---
+    function getActiveEntryId() {
+        const active = document.querySelector('.activity-slide:not(.d-none)');
+        return active ? active.dataset.entryId : null;
+    }
+
+    function updateChildRatings() {
+        const entryId = getActiveEntryId();
+        const existing = ratingsMap[entryId] || {};
+
+        // Clear all selections
+        document.querySelectorAll('.child-rating-row .rate-btn').forEach(b => b.classList.remove('selected'));
+
+        // Highlight existing ratings
+        document.querySelectorAll('.child-rating-row').forEach(row => {
+            const childId = row.dataset.childId;
+            const r = existing[childId];
+            if (r && r.rating) {
+                const btn = row.querySelector(`.rate-btn[data-rating="${r.rating}"]`);
+                if (btn) btn.classList.add('selected');
+            }
+        });
+
+        // Show save button if there are children
+        const saveBtn = document.getElementById('saveAllRatingsBtn');
+        if (saveBtn) saveBtn.style.display = entryId ? '' : 'none';
+    }
+
+    // Individual child rating click
+    document.querySelectorAll('.child-rating-row .rate-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const row = this.closest('.child-rating-row');
+            row.querySelectorAll('.rate-btn').forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+        });
+    });
+
+    // Save all ratings for current activity
+    document.getElementById('saveAllRatingsBtn')?.addEventListener('click', async function() {
+        const entryId = getActiveEntryId();
+        if (!entryId) return;
+
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+
+        let successCount = 0;
+
+        const rows = document.querySelectorAll('.child-rating-row');
+        for (const row of rows) {
+            const childId = row.dataset.childId;
+            const selectedBtn = row.querySelector('.rate-btn.selected');
+            if (!selectedBtn) continue;
+            const rating = selectedBtn.dataset.rating;
+
+            try {
+                const resp = await fetch('{% url "sage:rate_weekly_activity" %}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify({ entry_id: entryId, child_id: childId, rating: parseInt(rating) }),
+                    credentials: 'same-origin',
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    successCount++;
+                    if (!ratingsMap[entryId]) ratingsMap[entryId] = {};
+                    ratingsMap[entryId][childId] = { rating: parseInt(rating) };
+                }
+            } catch (err) {
+                showStatus('Error: ' + err.message, 'danger');
+            }
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check me-1"></i>Save All';
+
+        if (successCount > 0) {
+            showStatus(`Saved ${successCount} rating${successCount > 1 ? 's' : ''}!`, 'success');
+        }
+    });
+
+    // Init
+    if (total > 0) showActivity(0);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <h5 class="card-title mb-0 p-3">Upload Resources</h5>
+            <div class="card-header">
+                <form method="POST" id="upload-form" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input type="file" id="document-input" name="documents" class="form-control"
+                               accept=".pdf,.txt,.csv,.doc,.docx,.jpg,.jpeg,.png" multiple required>
+                        <button type="submit" id="upload-button" class="btn btn-primary">
+                            <i class="fas fa-upload me-2"></i>Upload
+                        </button>
+                    </div>
+                    <small class="text-muted mt-1 d-block">
+                        Upload documents for the AI agents to reference (PDFs, text files, images, etc.)
+                    </small>
+                </form>
+            </div>
+            <div class="card-body">
+                <div id="upload-status" class="mb-3"></div>
+
+                <!-- Document Library -->
+                <h5 class="card-title mb-3">Document Library</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Title</th>
+                                <th>Size</th>
+                                <th>Status</th>
+                                <th>Uploaded</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="docTableBody">
+                            {% for doc in documents %}
+                            <tr data-doc-id="{{ doc.id }}">
+                                <td><span class="badge bg-primary">{{ doc.file_type }}</span></td>
+                                <td>{{ doc.title }}</td>
+                                <td class="text-muted small">{{ doc.file_size|filesizeformat }}</td>
+                                <td>
+                                    {% if doc.analysis %}
+                                    <span class="badge bg-success" title="Parsed and available to AI agents"><i class="fas fa-robot me-1"></i>RAG Ready</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary" title="Text could not be extracted"><i class="fas fa-times-circle me-1"></i>Not Parsed</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted small">{{ doc.uploaded_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank" title="View">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ doc.file.url }}" class="btn btn-sm btn-outline-success" download title="Download">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteDocument('{{ doc.id }}')" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr id="emptyRow">
+                                <td colspan="6" class="text-center text-muted">No documents uploaded yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadForm = document.getElementById('upload-form');
+    const statusDiv = document.getElementById('upload-status');
+
+    uploadForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const fileInput = document.getElementById('document-input');
+        if (!fileInput.files || fileInput.files.length === 0) {
+            statusDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>Please select a file to upload</div>';
+            return;
+        }
+
+        const formData = new FormData(uploadForm);
+        const submitButton = uploadForm.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.innerHTML;
+
+        try {
+            statusDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>Uploading...</div>';
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+
+            const response = await fetch('{% url "sage:upload_documents" %}', {
+                method: 'POST',
+                body: formData,
+                credentials: 'same-origin'
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                statusDiv.innerHTML = `<div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>${data.message}</div>`;
+                fileInput.value = '';
+
+                const tbody = document.getElementById('docTableBody');
+                const emptyRow = document.getElementById('emptyRow');
+                if (emptyRow) emptyRow.remove();
+
+                (data.files || []).forEach(file => {
+                    const tr = document.createElement('tr');
+                    tr.setAttribute('data-doc-id', file.id);
+                    const statusBadge = file.parsed
+                        ? '<span class="badge bg-success" title="Parsed and available to AI agents"><i class="fas fa-robot me-1"></i>RAG Ready</span>'
+                        : '<span class="badge bg-secondary" title="Text could not be extracted"><i class="fas fa-times-circle me-1"></i>Not Parsed</span>';
+                    tr.innerHTML = `
+                        <td><span class="badge bg-primary">${file.type}</span></td>
+                        <td>${file.name}</td>
+                        <td class="text-muted small">${formatSize(file.size)}</td>
+                        <td>${statusBadge}</td>
+                        <td class="text-muted small">Just now</td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="/media/uploads/${file.name}" class="btn btn-sm btn-outline-primary" target="_blank" title="View"><i class="fas fa-eye"></i></a>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteDocument('${file.id}')" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>`;
+                    tbody.prepend(tr);
+                });
+            } else {
+                throw new Error(data.error || 'Upload failed');
+            }
+        } catch (error) {
+            statusDiv.innerHTML = `<div class="alert alert-danger"><i class="fas fa-exclamation-circle me-2"></i>Error: ${error.message}</div>`;
+        } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+        }
+    });
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    window.deleteDocument = function(docId) {
+        if (!confirm('Delete this document?')) return;
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        fetch(`/sage/delete-file/${docId}/`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': csrfToken },
+            credentials: 'same-origin'
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const row = document.querySelector(`tr[data-doc-id="${docId}"]`);
+                if (row) row.remove();
+            } else {
+                alert(data.error || 'Delete failed');
+            }
+        })
+        .catch(err => alert('Error: ' + err.message));
+    };
+});
+</script>
+{% endblock %}

@@ -1,0 +1,16 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - link "Happy Caterpillars" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - list [ref=e4]:
+      - listitem [ref=e5]:
+        - link "Register" [ref=e6] [cursor=pointer]:
+          - /url: /register/
+      - listitem [ref=e7]:
+        - link "Login" [ref=e8] [cursor=pointer]:
+          - /url: /login/
+  - generic [ref=e10]:
+    - heading "Weekly Schedule" [level=1] [ref=e11]
+    - link "← Back to Sage" [ref=e12] [cursor=pointer]:
+      - /url: /sage/
+  - alert [ref=e15]
