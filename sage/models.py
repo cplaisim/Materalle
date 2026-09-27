@@ -160,6 +160,14 @@ class Document(models.Model):
             self.file_size = self.file.size
         super().save(*args, **kwargs)
 
+        if self.analysis and self.id:
+            try:
+                from .rag_vectordb import index_document
+                index_document(self.id, self.title, self.analysis)
+            except Exception as e:
+                import logging
+                logging.warning(f"Failed to index document in vector db: {e}")
+
     def __str__(self):
         return self.title
 

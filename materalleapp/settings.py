@@ -106,6 +106,11 @@ LLM_BACKEND = os.environ.get("LLM_BACKEND", "anthropic")
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:12434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.2:1b")
 
+# Qdrant Vector Database settings (for RAG)
+QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
+QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY", "materalle-key-2024")
+ENABLE_RAG_VECTORDB = os.environ.get("ENABLE_RAG_VECTORDB", "false").lower() == "true"
+
 # Database
 # Prefer SQLite for local development when explicitly enabled or when Postgres is unavailable.
 USE_SQLITE = os.environ.get("USE_SQLITE", "1") == "1" or not os.environ.get("DB_HOST")

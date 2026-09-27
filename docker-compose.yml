@@ -55,6 +55,23 @@ services:
       ollama:
         condition: service_healthy
 
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: materalle_qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    environment:
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-materalle-key-2024}
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: .
@@ -73,6 +90,9 @@ services:
       OLLAMA_BASE_URL: http://ollama:12434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
       LLM_TIMEOUT_SECONDS: 300
+      QDRANT_URL: http://qdrant:6333
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-materalle-key-2024}
+      ENABLE_RAG_VECTORDB: "true"
     volumes:
       - .:/app
       - ./staticfiles:/app/staticfiles
@@ -83,6 +103,8 @@ services:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      qdrant:
         condition: service_healthy
       ollama-model-init:
         condition: service_completed_successfully
@@ -124,3 +146,4 @@ services:
 volumes:
   db_data:
   ollama_data:
+  qdrant_data:

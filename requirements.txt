@@ -36,3 +36,4 @@ redis
 djangorestframework-simplejwt
 websockets>=12.0
 python-jose[cryptography]>=3.3.0
+qdrant-client>=2.7.0

@@ -105,7 +105,7 @@ async def sage_interaction(request):
                 session = await sync_to_async(LearningSession.objects.create)(user=user)
             
         agent = SageAgent()
-        rag_context = await sync_to_async(get_rag_context)(request.user)
+        rag_context = await sync_to_async(get_rag_context)(request.user, query=message)
         if rag_context:
             agent.system_prompt += rag_context
 
@@ -563,15 +563,35 @@ def _extract_document_text(file, ext):
         return ''
 
 
-def get_rag_context(user):
-    """Build RAG context string from all parsed documents for a user."""
+def get_rag_context(user, query=None):
+    """Build RAG context string from parsed documents using semantic search if available."""
     docs = Document.objects.filter(uploaded_by=user).exclude(analysis__isnull=True).exclude(analysis='')
     if not docs.exists():
         return ''
+
     sections = []
-    for doc in docs[:10]:  # Limit to 10 most recent
-        text = doc.analysis[:3000]  # Cap per-doc length
-        sections.append(f"--- Document: {doc.title} ---\n{text}")
+
+    if query and getattr(settings, 'ENABLE_RAG_VECTORDB', False):
+        try:
+            from .rag_vectordb import search_documents
+            results = search_documents(query, limit=3)
+            if results:
+                for result in results:
+                    text = result.get('text', '')[:3000]
+                    score = result.get('score', 0)
+                    sections.append(f"--- Document: {result.get('title')} (relevance: {score:.2f}) ---\n{text}")
+        except Exception as e:
+            import logging
+            logging.warning(f"Vector search failed, falling back to simple concatenation: {e}")
+
+    if not sections:
+        for doc in docs[:10]:
+            text = doc.analysis[:3000]
+            sections.append(f"--- Document: {doc.title} ---\n{text}")
+
+    if not sections:
+        return ''
+
     return (
         "\n\nYou have access to the following reference documents uploaded by the user. "
         "Use them to inform your responses when relevant:\n\n"
