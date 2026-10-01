@@ -1011,11 +1011,16 @@ SAGE_STATIC_ACTIVITIES = {
 
 SAGE_MEAL_MAP = {
     'breakfast': 'BREAKFAST',
-    'lunch': 'LUNCH',
-    'snack': 'P.M. SNACK',
-    'pm snack': 'P.M. SNACK',
     'am snack': 'A.M. SNACK',
+    'lunch': 'LUNCH',
+    'pm snack': 'P.M. SNACK',
+    'supper': 'SUPPER',
 }
+
+
+def _normalize_activity(activity):
+    """Lower-case a slot label and drop periods so 'A.M. Snack' matches 'am snack'."""
+    return ' '.join(activity.lower().replace('.', '').split())
 
 
 @login_required
@@ -1239,7 +1244,7 @@ def apply_menu_to_schedule(request):
         guideline_slots = Schedule.objects.filter(is_default=False, day_of_week=0).order_by('start_time')
         meal_times = {}
         for entry in guideline_slots:
-            activity_lower = entry.activity.lower().strip()
+            activity_lower = _normalize_activity(entry.activity)
             for key, meal_type in SAGE_MEAL_MAP.items():
                 if key in activity_lower:
                     # Find the display name for this meal_type
@@ -1331,7 +1336,7 @@ def generate_weekly_schedule(request):
 
         # --- Sage static activities ---
         for entry in sage_slots:
-            activity_lower = entry.activity.lower().strip()
+            activity_lower = _normalize_activity(entry.activity)
 
             # Check if it's a known static activity
             static_match = None
